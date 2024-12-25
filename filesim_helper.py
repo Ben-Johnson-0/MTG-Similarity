@@ -10,3 +10,4 @@ def add_to_dict(key_name:str, dictionary:dict, on_creation:int=1) -> None:
         dictionary[key_name] = on_creation
     else:
         dictionary[key_name] += 1
+

@@ -7,8 +7,6 @@
 import filesim_helper as fsh
 
 from statistics import median
-
-
 from re import sub
 import os
 import sys
@@ -57,14 +55,6 @@ def clean_cards(fname:str) -> list:
         results.append(x)
 
     return results
-
-# TODO - check what use this has
-# Returns list of card names
-def get_cardnames(card_list:list) -> list:
-    names = []
-    for card in card_list:
-        names.append(card["name"])
-    return names
 
 # Create shingle binary array
 def generate_shingle_bin(imp_shingles:dict, card:dict) -> np.array:
@@ -207,7 +197,7 @@ def strongly_connected(adjmat:np.array) -> dict:
 
 
 # Create a dictionary of important shingles. Keep only the shingles that appear at least minVal times
-def imp_shins(card_list:list, minVal:int = 4):
+def imp_shins(card_list:list, minVal:int = 4) -> dict:
     shin_freq = dict()      # Shingle Frequency
     # Loop through the files retrieving all of our shingles
     for card in card_list:
@@ -252,8 +242,8 @@ if __name__ == "__main__":
         rows_per_block = int(sys.argv[4])
 
     all_cards = clean_cards(fname)                          # Get card list
-    card_names = get_cardnames(all_cards)                   # Get all the file paths
-    imp_shingles = imp_shins(all_cards, minVal=4)          # Find all the important shingles that appear atleast minVal times
+    card_names = [entry["name"] for entry in all_cards]     # Get all the card names
+    imp_shingles = imp_shins(all_cards, minVal=4)           # Find all the important shingles that appear atleast minVal times
     mat = generate_shingle_bin_matrix(imp_shingles, all_cards)             # Apply the characteristic function to all files to make a matrix
     mat = minhash(mat, num_minhashes, max_rows)             # Minhash the matrix
     sim_mat = sim_vote(mat, votes, blocks, rows_per_block)  # Obtain the adjacency matrix of similar documents
