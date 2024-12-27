@@ -96,7 +96,7 @@ def generate_shingle_bin_matrix(imp_shingles:dict, card_list:list) -> np.array:
 
     return mat
 
-# lambda function generator for generating random hashing functions
+# lambda function generator used for generating random hashing functions for minhash
 def randfun(a,b,n):
     return lambda x: (a*x+b) % n
 
@@ -253,7 +253,7 @@ if __name__ == "__main__":
 
     # Find the strongly connected components:
     components = strongly_connected(sim_mat)
-    lt2 = 0
+    lt2 = 0         # number of groups of size 1
     max_length = 0
     all_lens = [0] * len(components)
     for key in components.keys():
