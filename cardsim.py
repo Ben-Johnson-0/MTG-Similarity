@@ -8,7 +8,6 @@ import filesim_helper as fsh
 
 import os
 import sys
-import json
 import numpy as np
 from sympy import primerange
 from random import choice, randrange
@@ -178,6 +177,7 @@ def imp_shins(card_list:list, minVal:int = 4) -> dict:
 if __name__ == "__main__":
 
     from statistics import median
+    import json
 
     if(len(sys.argv) < 2):
         print(f"Usage: {sys.argv[0]} <oracle-cards-file> <OPTIONAL:num-minhashes> <OPTIONAL:blocks> <OPTIONAL:rows-per-block>", file=sys.stderr)

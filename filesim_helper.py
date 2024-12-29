@@ -1,4 +1,7 @@
 from re import sub
+import os
+import sys
+import json
 
 # Return the set of tuples from a given word list
 def kshingles(data:list, k:int = 3) -> set:
