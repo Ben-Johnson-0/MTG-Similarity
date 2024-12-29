@@ -6,8 +6,6 @@
 
 import filesim_helper as fsh
 
-from statistics import median
-from re import sub
 import os
 import sys
 import json
@@ -15,46 +13,6 @@ import numpy as np
 from sympy import primerange
 from random import choice, randrange
 
-
-# Input raw oracle-cards file, returns list of 
-def clean_cards(fname:str) -> list:
-    if(not os.path.isfile(fname)):
-        print(f"\"{fname}\" is not a file or cannot be found.", file=sys.stderr)
-        sys.exit()
-    
-    with open(fname, encoding='utf-8') as fd:
-        data = json.load(fd)
-    
-    results = []
-    for x in data:
-
-        # Skip cards that are not legal in commander
-        if x['legalities']["commander"] != 'legal':
-            continue
-        
-        # Combine multi-faced cards into one oracle text
-        if x.get('card_faces'):
-            for face in x['card_faces']:
-                # Remove reminder text
-                face["oracle_text"] = sub(r"\(.*\)", '', face["oracle_text"])
-                # Escape special characters from the name
-                name = sub("[\-\.\/\[\]\\\*\+\?\)\{\}\|]", "\\\1", face['name'])
-                # Replace instances of own name with ~
-                face["oracle_text"] = sub(rf"{name}", '~', face["oracle_text"])
-            x['oracle_text'] = '\n//\n'.join([face["oracle_text"] for face in x['card_faces']])
-        
-        # Clean normal card's text
-        elif x.get('oracle_text'):
-            # Remove reminder text
-            x["oracle_text"] = sub(r"\(.*\)", '', x["oracle_text"])
-            # Escape special characters from the name
-            name = sub("[\-\.\/\[\]\\\*\+\?\{\}\|]", "\\\1", x['name'])
-            # Replace instances of own name with ~
-            x["oracle_text"] = sub(rf"{name}", '~', x["oracle_text"])
-
-        results.append(x)
-
-    return results
 
 # Create shingle binary array
 def generate_shingle_bin(imp_shingles:dict, card:dict) -> np.array:
@@ -218,6 +176,9 @@ def imp_shins(card_list:list, minVal:int = 4) -> dict:
 
 
 if __name__ == "__main__":
+
+    from statistics import median
+
     if(len(sys.argv) < 2):
         print(f"Usage: {sys.argv[0]} <oracle-cards-file> <OPTIONAL:num-minhashes> <OPTIONAL:blocks> <OPTIONAL:rows-per-block>", file=sys.stderr)
         sys.exit()
@@ -241,7 +202,7 @@ if __name__ == "__main__":
     if(len(sys.argv) > 4):
         rows_per_block = int(sys.argv[4])
 
-    all_cards = clean_cards(fname)                          # Get card list
+    all_cards = fsh.clean_cards(fname)                          # Get card list
     card_names = [entry["name"] for entry in all_cards]     # Get all the card names
     imp_shingles = imp_shins(all_cards, minVal=4)           # Find all the important shingles that appear atleast minVal times
     mat = generate_shingle_bin_matrix(imp_shingles, all_cards)             # Apply the characteristic function to all files to make a matrix
