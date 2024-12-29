@@ -39,7 +39,7 @@ def clean_cards(fname:str) -> list:
                 # Remove reminder text
                 face["oracle_text"] = sub(r"\(.*\)", '', face["oracle_text"])
                 # Escape special characters from the name
-                name = sub("[\-\.\/\[\]\\\*\+\?\)\{\}\|]", "\\\1", face['name'])
+                name = sub(r"[\-\.\/\[\]\\\*\+\?\)\{\}\|]", "\\\1", face['name'])
                 # Replace instances of own name with ~
                 face["oracle_text"] = sub(rf"{name}", '~', face["oracle_text"])
             x['oracle_text'] = '\n//\n'.join([face["oracle_text"] for face in x['card_faces']])
@@ -49,7 +49,7 @@ def clean_cards(fname:str) -> list:
             # Remove reminder text
             x["oracle_text"] = sub(r"\(.*\)", '', x["oracle_text"])
             # Escape special characters from the name
-            name = sub("[\-\.\/\[\]\\\*\+\?\{\}\|]", "\\\1", x['name'])
+            name = sub(r"[\-\.\/\[\]\\\*\+\?\{\}\|]", "\\\1", x['name'])
             # Replace instances of own name with ~
             x["oracle_text"] = sub(rf"{name}", '~', x["oracle_text"])
 
