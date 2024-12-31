@@ -5,6 +5,7 @@
 #                   oracle-cards-file num-minhashes blocks rows-per-block votes
 
 import filesim_helper as fsh
+from oracle_fetcher import get_oracle_json
 
 import os
 import sys
@@ -12,6 +13,24 @@ import numpy as np
 from sympy import primerange
 from random import choice, randrange
 
+
+# Return a list of card dictionaries
+def get_card_list(raw_json_file: str | None = None) -> list:
+    if raw_json_file == None:
+        raw_json_file = get_oracle_json()
+    all_cards = fsh.clean_cards(raw_json_file)
+    return all_cards
+
+# Given a list of cards, return groups of cards that are strongly connected for similarity
+def card_similarity(cards:list, num_minhashes:int, blocks:int, rows_per_block:int, votes:int, max_rows:int) -> dict:
+    imp_shingles = imp_shins(all_cards, minVal=4)               # Find all the important shingles that appear atleast minVal times
+    mat = generate_shingle_bin_matrix(imp_shingles, cards)      # Apply the characteristic function to all files to make a matrix - each card will have a binary representation for each of the important shingles
+    mat = minhash(mat, num_minhashes, max_rows)                 # Minhash the matrix
+    sim_mat = sim_vote(mat, votes, blocks, rows_per_block)      # Obtain the adjacency matrix of similar documents
+
+    # Find the strongly connected components:
+    components = strongly_connected(sim_mat)
+    return components
 
 # Create shingle binary array
 def generate_shingle_bin(imp_shingles:dict, card:dict) -> np.array:
@@ -176,25 +195,29 @@ def imp_shins(card_list:list, minVal:int = 4) -> dict:
 
 if __name__ == "__main__":
 
-    from statistics import median
-    import json
-
-    if(len(sys.argv) < 2):
-        print(f"Usage: {sys.argv[0]} <oracle-cards-file> <OPTIONAL:num-minhashes> <OPTIONAL:blocks> <OPTIONAL:rows-per-block>", file=sys.stderr)
-        sys.exit()
-
-    fname = sys.argv[1]
-    if(not os.path.isfile(fname)):
-        print(f"\"{fname}\" is not a file or cannot be found.", file=sys.stderr)
-        sys.exit()    
-
     # Default values
-    num_minhashes = 96
+    num_minhashes = 144
     blocks = 24
-    rows_per_block = 4
+    rows_per_block = 6
     votes = 6
     max_rows = 500
 
+    if("-h" in sys.argv or "--help" in sys.argv):
+        print(f"Usage: {sys.argv[0]} [oracle-cards-file] [num-minhashes] [blocks] [rows-per-block]", file=sys.stderr)
+        print("'oracle-cards-file' will be automatically retrieved if not found locally.", file=sys.stderr)
+        print(f"'num-minhashes' defaults to {num_minhashes}. It must be the result of blocks*rows_per_block.", file=sys.stderr)
+        print(f"'blocks' defaults to {blocks}.", file=sys.stderr)
+        print(f"'rows_per_block' defaults to {rows_per_block}.", file=sys.stderr)
+        print(f"'votes' defaults to {votes}.", file=sys.stderr)
+        print(f"'max_rows' defaults to {max_rows}.", file=sys.stderr)
+        sys.exit()
+
+    fname = None
+    if len(sys.argv) > 1:
+        fname = sys.argv[1]
+        if(not os.path.isfile(fname)):
+            print(f"\"{fname}\" is not a file or cannot be found.", file=sys.stderr)
+            sys.exit()
     if(len(sys.argv) > 2):
         num_minhashes = int(sys.argv[2])
     if(len(sys.argv) > 3):
@@ -202,25 +225,27 @@ if __name__ == "__main__":
     if(len(sys.argv) > 4):
         rows_per_block = int(sys.argv[4])
 
-    all_cards = fsh.clean_cards(fname)                          # Get card list
-    card_names = [entry["name"] for entry in all_cards]     # Get all the card names
-    imp_shingles = imp_shins(all_cards, minVal=4)           # Find all the important shingles that appear atleast minVal times
-    mat = generate_shingle_bin_matrix(imp_shingles, all_cards)             # Apply the characteristic function to all files to make a matrix
-    mat = minhash(mat, num_minhashes, max_rows)             # Minhash the matrix
-    sim_mat = sim_vote(mat, votes, blocks, rows_per_block)  # Obtain the adjacency matrix of similar documents
+    from statistics import median
+    import json
 
-    # Turn the adjacency matrix into an adjacency list that can be used with strong
+
+    # Calculate card similarity
+    all_cards = get_card_list(fname)                             # Get card list
+    card_names = [entry["name"] for entry in all_cards]     # Get all the card names for later
+    components = card_similarity(all_cards, num_minhashes, blocks, rows_per_block, votes, max_rows)
+
+    # Collect some data about the components
     n = len(all_cards)
-
-    # Find the strongly connected components:
-    components = strongly_connected(sim_mat)
     lt2 = 0         # number of groups of size 1
     max_length = 0
     all_lens = [0] * len(components)
     for key in components.keys():
         comp_len = len(components[key])
         all_lens[int(key)] = comp_len
+
+        # Reunite the cards with their names (they were reduced to indices after generating their characteristic binary representation)
         components[key] = [card_names[x] for x in components[key]]
+        
         if comp_len > max_length:
             max_length = comp_len
         if comp_len < 2:
@@ -232,6 +257,9 @@ if __name__ == "__main__":
     print(f"Average group size: {n/len(components):.2f}")
     print(f"Median group size: {median(all_lens)}")
 
-    with open("card-similarity.json", "w") as fd:
+    new_file = "card-similarity.json"
+    print(f"\nSaving to '{new_file}'...")
+    with open(new_file, "w") as fd:
         json_obj = json.dumps(components, indent=2)
         fd.write(json_obj)
+    print("Saved.")
