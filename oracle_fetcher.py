@@ -57,7 +57,7 @@ def get_oracle_json() -> str:
     return new_file_name
 
 
-# Search for files that match the oracle cards name pattern, return the latest file name
+# Search for files that match the oracle cards name pattern, return the latest file name and datetime object
 def get_latest_local_oracle_json() -> tuple[str, datetime.datetime]:
     oracle_json_files:list = glob.glob("oracle-cards-*-*-*T*_*_*.json")
 
