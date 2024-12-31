@@ -7,9 +7,15 @@ import datetime
 PROGRAM_VERSION = "MTGCardSimilarity/0.1"
 CARD_DATASET = "https://api.scryfall.com/bulk-data/oracle-cards"
 
-# NOTE: In it's current state, each call of this will download from Scryfall, this should be called very infrequently
+# NOTE: Only ever requests a new file if one does not exist for the present day
 # Retrieve the oracle json file of all cards and save it locally, returns the new file's name
 def get_oracle_json() -> str:
+
+    # Return latest file if it's from today's date
+    latest_file, latest_date = get_latest_local_oracle_json()
+    if latest_date.date() == datetime.datetime.now().date():
+        return latest_file
+
     headers = { "User-Agent": PROGRAM_VERSION }
     initial_req = urllib.request.Request(CARD_DATASET, headers=headers)
 
@@ -52,7 +58,7 @@ def get_oracle_json() -> str:
 
 
 # Search for files that match the oracle cards name pattern, return the latest file name
-def get_latest_local_oracle_json() -> str:
+def get_latest_local_oracle_json() -> tuple[str, datetime.datetime]:
     oracle_json_files:list = glob.glob("oracle-cards-*-*-*T*_*_*.json")
 
     current_date = datetime.datetime.now()
@@ -75,11 +81,9 @@ def get_latest_local_oracle_json() -> str:
             latest_date = file_date
             latest_file = fname
 
-    return latest_file
+    return latest_file, latest_date
 
 
 if __name__ == "__main__":
     fname = get_oracle_json()
     print(f"Oracle text of all cards successfully saved as '{fname}'")
-
-    print(get_latest_local_oracle_json())
