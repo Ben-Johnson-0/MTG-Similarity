@@ -1,6 +1,8 @@
 import urllib.request, urllib.error
 import sys
 import json
+import glob
+import datetime
 
 PROGRAM_VERSION = "MTGCardSimilarity/0.1"
 CARD_DATASET = "https://api.scryfall.com/bulk-data/oracle-cards"
@@ -49,6 +51,35 @@ def get_oracle_json() -> str:
     return new_file_name
 
 
+# Search for files that match the oracle cards name pattern, return the latest file name
+def get_latest_local_oracle_json() -> str:
+    oracle_json_files:list = glob.glob("oracle-cards-*-*-*T*_*_*.json")
+
+    current_date = datetime.datetime.now()
+    latest_date:datetime.datetime = None
+    latest_file:str = None
+    for fname in oracle_json_files:
+        # Parse date data
+        date_string:str = fname[13:-5]
+        date_string = date_string.replace('_', ':')
+        file_date = datetime.datetime.fromisoformat(date_string)
+
+        # First file
+        if latest_date == None:
+            latest_date = file_date
+            latest_file = fname
+            continue
+        
+        diff = current_date - file_date
+        if diff < (current_date - latest_date):
+            latest_date = file_date
+            latest_file = fname
+
+    return latest_file
+
+
 if __name__ == "__main__":
     fname = get_oracle_json()
     print(f"Oracle text of all cards successfully saved as '{fname}'")
+
+    print(get_latest_local_oracle_json())
