@@ -62,20 +62,19 @@ def getImageFromURLs(urls:list, controller:CardDisplay):
     fetch_next_image(0)
 
 
-# Search bar for navigating cards via card-name
-def populate_search_section(master, cards:list):
-    search_label = tk.Label(master, text = "Search:")
-    search_text = tk.StringVar()
-    entry_bar = tk.Entry(master, textvariable=search_text, width=32)
-    search_button = tk.Button(master, text="Search", command = lambda: search_cards(cards, search_text) )
+class SearchWidget(tk.Frame):
+    def __init__(self, master = None, cnf = ..., *, background = ..., bd = 0, bg = ..., border = 0, borderwidth = 0, class_ = "Frame", colormap = "", container = False, cursor = "", height = 0, highlightbackground = ..., highlightcolor = ..., highlightthickness = 0, name = ..., padx = 0, pady = 0, relief = "flat", takefocus = 0, visual = "", width = 0):
+        super().__init__(master, cnf, background=background, bd=bd, bg=bg, border=border, borderwidth=borderwidth, class_=class_, colormap=colormap, container=container, cursor=cursor, height=height, highlightbackground=highlightbackground, highlightcolor=highlightcolor, highlightthickness=highlightthickness, name=name, padx=padx, pady=pady, relief=relief, takefocus=takefocus, visual=visual, width=width)
 
-    search_label.pack()
-    entry_bar.pack()
-    search_button.pack()
+        searchlab = tk.Label(self, text = "Search:")
+        search_text = tk.StringVar()
+        entry_bar = tk.Entry(self, textvariable=search_text, width=32)
+        search_button = tk.Button(self, text="Search", command = lambda: search_cards(cards, search_text) )
 
-# Display area for showing cards that the user pinned
-def populate_pinned_section():
-    pass
+        searchlab.pack()
+        entry_bar.pack(side=tk.LEFT, padx=2, pady=2)
+        search_button.pack(side=tk.LEFT, padx=2, pady=2)
+
 
 # Shows a card's name, image, oracle text, and a sub window of other cards within it's similarity group
 def display_all_card_info(card_json:dict):
