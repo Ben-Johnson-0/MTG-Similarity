@@ -25,7 +25,7 @@ class CardDisplay(tk.Frame):
         urls = [card.get("image_uris").get("normal") for card in self.card_dicts]
 
         for _ in urls:
-            label = tk.Label(self.imagelab_frame, text="Loading...", width=25, height=10)
+            label = tk.Label(self.imagelab_frame, text="Loading...", width=66, height=42)
             label.pack(side=tk.LEFT, padx=2, pady=2)
             self.imagelabs.append(label)
 
@@ -35,7 +35,6 @@ class CardDisplay(tk.Frame):
     def on_image_loaded(self, event):
         for lab, img in zip(self.imagelabs, self.images):
             lab.config(image=img, text="", width=img.width(), height=img.height())
-            print(img.width(), img.height())
 
 # Fetches a list of card images from URLs
 def getImageFromURLs(urls:list, controller:CardDisplay):
