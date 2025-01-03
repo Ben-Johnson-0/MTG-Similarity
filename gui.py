@@ -1,7 +1,7 @@
 import tkinter as tk
 import threading
 from urllib.request import urlopen, Request
-from PIL import Image, ImageTk
+from PIL import ImageTk
 
 PROGRAM_VERSION = "MTGCardSimilarity/0.1"
 
@@ -37,17 +37,30 @@ class CardDisplay(tk.Frame):
             lab.config(image=img, text="", width=img.width(), height=img.height())
             print(img.width(), img.height())
 
+# Fetches a list of card images from URLs
 def getImageFromURLs(urls:list, controller:CardDisplay):
     images = []
-    try:
-        for url in urls:
-            req = Request(url, headers = { "User-Agent": PROGRAM_VERSION })
-            images.append(ImageTk.PhotoImage(file=urlopen(req)))
 
-        controller.images = images
-        controller.event_generate("<<ImagesLoaded>>")
-    except Exception as e:
-        print(f"Error loading images: {e}")
+    def fetch_next_image(index:int):
+        if index < len(urls):
+            try:
+                for url in urls:
+                    req = Request(url, headers = { "User-Agent": PROGRAM_VERSION })
+                    images.append(ImageTk.PhotoImage(file=urlopen(req)))
+
+            except Exception as e:
+                print(f"Error loading images: {e}")
+
+            # Schedule next image download after 50ms delay - per Scryfall's request
+            controller.after(50, fetch_next_image, index + 1)
+
+        # Done fetching images
+        else:
+            controller.images = images
+            controller.event_generate("<<ImagesLoaded>>")
+
+    # Start image fetching
+    fetch_next_image(0)
 
 
 # Search bar for navigating cards via card-name
