@@ -70,44 +70,22 @@ class SearchWidget(tk.Frame):
         searchlab = tk.Label(self, text = "Search Parameters")
         search_button = tk.Button(self, text="Search", command = lambda: self.search_cards() )
 
-        namelab = tk.Label(self, text = "Card Name:")
+        self.row_index = 0
+
         self.name_text = tk.StringVar()
-        name_bar = tk.Entry(self, textvariable=self.name_text, width=32)
-
-        oraclelab = tk.Label(self, text = "Card Text:")
+        self.add_search_parameter_widget("Name", "name", self.name_text)
         self.oracle_text = tk.StringVar()
-        oracle_bar = tk.Entry(self, textvariable=self.oracle_text, width=32)
-
-        typelab = tk.Label(self, text = "Card Type:")
+        self.add_search_parameter_widget("Card Text", "oracle_text", self.name_text)
         self.type_text = tk.StringVar()
-        type_bar = tk.Entry(self, textvariable=self.type_text, width=32)
-
-        colorlab = tk.Label(self, text = "Color:")
+        self.add_search_parameter_widget("Type", "type_line", self.name_text)
         self.color_text = tk.StringVar()
-        color_bar = tk.Entry(self, textvariable=self.color_text, width=32)
-
-        coloridlab = tk.Label(self, text = "Color Identity:")
+        self.add_search_parameter_widget("Colors", "colors", self.name_text)
         self.colorid_text = tk.StringVar()
-        colorid_bar = tk.Entry(self, textvariable=self.colorid_text, width=32)
-
-        cmclab = tk.Label(self, text = "Mana Value / Converted Mana Cost:")
+        self.add_search_parameter_widget("Color Identity", "color_identity", self.name_text)
         self.cmc_text = tk.StringVar()
-        cmc_bar = tk.Entry(self, textvariable=self.cmc_text, width=32)
+        self.add_search_parameter_widget("Mana Value / Converted Mana Cost", "cmc", self.name_text)
 
-        # searchlab.grid(row=0, column=0)
-        namelab.grid(row=0, column=0, padx=2, pady=2)
-        name_bar.grid(row=1, column=0, padx=2, pady=2)
-        oraclelab.grid(row=2, column=0, padx=2, pady=2)
-        oracle_bar.grid(row=3, column=0, padx=2, pady=2)
-        typelab.grid(row=4, column=0, padx=2, pady=2)
-        type_bar.grid(row=5, column=0, padx=2, pady=2)
-        colorlab.grid(row=6, column=0, padx=2, pady=2)
-        color_bar.grid(row=7, column=0, padx=2, pady=2)
-        coloridlab.grid(row=8, column=0, padx=2, pady=2)
-        colorid_bar.grid(row=9, column=0, padx=2, pady=2)
-        cmclab.grid(row=10, column=0, padx=2, pady=2)
-        cmc_bar.grid(row=11, column=0, padx=2, pady=2)
-        search_button.grid(row=12, column=0, padx=2, pady=2)
+        search_button.grid(row=self.row_index, column=0, padx=2, pady=2)
 
     def search_cards(self) -> list:
         print("Name:", self.name_text.get())
@@ -135,6 +113,23 @@ class SearchWidget(tk.Frame):
 
         print([match["name"] for match in matches])
         return matches
+    
+    # Add a widget that contains a label, entry, and add button
+    def add_search_parameter_widget(self, parameter_lab:str, parameter_key:str, strVar:tk.StringVar):
+        label = tk.Label(self, text=parameter_lab)
+        entry = tk.Entry(self, textvariable=strVar, width=32)
+        add_button = tk.Button(self, text="Add", command=lambda: self.add_search(parameter_key, strVar))
+
+        label.grid(row=self.row_index, column=0)
+        entry.grid(row=self.row_index+1, column=0)
+        add_button.grid(row=self.row_index+1, column=1)
+
+        self.row_index += 2
+
+    # Add a search value to the things to search for
+    def add_search(parameter_key:str, strVar:tk.StringVar):
+        pass
+
 
 
 
