@@ -66,34 +66,25 @@ class SearchWidget(tk.Frame):
     def __init__(self, parent:tk.Tk, card_dicts:list):
         super().__init__(parent)
         self.cards = card_dicts
-
-        searchlab = tk.Label(self, text = "Search Parameters")
-        search_button = tk.Button(self, text="Search", command = lambda: self.search_cards() )
-
         self.row_index = 0
 
         self.name_text = tk.StringVar()
         self.add_search_parameter_widget("Name", "name", self.name_text)
         self.oracle_text = tk.StringVar()
-        self.add_search_parameter_widget("Card Text", "oracle_text", self.name_text)
+        self.add_search_parameter_widget("Card Text", "oracle_text", self.oracle_text)
         self.type_text = tk.StringVar()
-        self.add_search_parameter_widget("Type", "type_line", self.name_text)
+        self.add_search_parameter_widget("Type", "type_line", self.type_text)
         self.color_text = tk.StringVar()
-        self.add_search_parameter_widget("Colors", "colors", self.name_text)
+        self.add_search_parameter_widget("Colors", "colors", self.color_text)
         self.colorid_text = tk.StringVar()
-        self.add_search_parameter_widget("Color Identity", "color_identity", self.name_text)
+        self.add_search_parameter_widget("Color Identity", "color_identity", self.colorid_text)
         self.cmc_text = tk.StringVar()
-        self.add_search_parameter_widget("Mana Value / Converted Mana Cost", "cmc", self.name_text)
+        self.add_search_parameter_widget("Mana Value / Converted Mana Cost", "cmc", self.cmc_text)
 
+        search_button = tk.Button(self, text="Search", command = lambda: self.search_cards() )
         search_button.grid(row=self.row_index, column=0, padx=2, pady=2)
 
     def search_cards(self) -> list:
-        print("Name:", self.name_text.get())
-        print("Text:", self.oracle_text.get())
-        print("Type:", self.type_text.get())
-        print("Color:", self.color_text.get())
-        print("ColorID:", self.colorid_text.get())
-        print("CMC:", self.cmc_text.get())
 
         matches = []
         for card in self.cards:
