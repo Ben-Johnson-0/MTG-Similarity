@@ -67,6 +67,7 @@ class SearchWidget(tk.Frame):
         super().__init__(parent)
         self.cards = card_dicts
         self.row_index = 0
+        self.patterns = []  # List of search to match to
 
         self.name_text = tk.StringVar()
         self.add_search_parameter_widget("Name", "name", self.name_text)
@@ -79,47 +80,67 @@ class SearchWidget(tk.Frame):
         self.colorid_text = tk.StringVar()
         self.add_search_parameter_widget("Color Identity", "color_identity", self.colorid_text)
         self.cmc_text = tk.StringVar()
-        self.add_search_parameter_widget("Mana Value / Converted Mana Cost", "cmc", self.cmc_text)
+        self.add_search_parameter_widget("Mana Value / Converted Mana Cost", "cmc", self.cmc_text, hasCompareOpts=True)
 
         search_button = tk.Button(self, text="Search", command = lambda: self.search_cards() )
-        search_button.grid(row=self.row_index, column=0, padx=2, pady=2)
+        search_button.grid(row=self.row_index, column=3, padx=2, pady=2)
 
     def search_cards(self) -> list:
-
+        print("Search is currently non-functional.")
+        return
         matches = []
+
         for card in self.cards:
-            if self.name_text.get() != "" and self.name_text.get().lower() not in card["name"].lower():
-                continue
-            if self.oracle_text.get() != "" and self.oracle_text.get().lower() not in card["oracle_text"].lower():
-                continue
-            if self.type_text.get() != "" and self.type_text.get().lower() not in card["type_line"].lower():
-                continue
-
-            # These will need a different input type, or a change to the way search works:
-            # self.color_text.get()
-            # self.colorid_text.get()
-            # self.cmc_text.get()
-
+            for pattern in self.patterns:
+                continue    
             matches.append(card)
 
         print([match["name"] for match in matches])
         return matches
     
     # Add a widget that contains a label, entry, and add button
-    def add_search_parameter_widget(self, parameter_lab:str, parameter_key:str, strVar:tk.StringVar):
-        label = tk.Label(self, text=parameter_lab)
-        entry = tk.Entry(self, textvariable=strVar, width=32)
-        add_button = tk.Button(self, text="Add", command=lambda: self.add_search(parameter_key, strVar))
+    def add_search_parameter_widget(self, parameter_lab:str, parameter_key:str, strVar:tk.StringVar, hasCompareOpts:bool = False):
+        col = 0
+        options = [False, False]
 
-        label.grid(row=self.row_index, column=0)
-        entry.grid(row=self.row_index+1, column=0)
-        add_button.grid(row=self.row_index+1, column=1)
+        if hasCompareOpts:
+            compare_options = ("==", ">=", "<=", ">", "<")
+            compare_var = tk.StringVar()
+            options[0] = compare_var                 # This needs to be tested
+            compare_var.set(compare_options[0])
+            compare = tk.OptionMenu(self, compare_var, *compare_options)
+            compare.grid(row=self.row_index+1, column=col)
+        
+        logic_options = ("and", "or", "not")
+        logic_var = tk.StringVar()
+        options[1] = logic_var
+        logic_var.set(logic_options[0])
+        logic = tk.OptionMenu(self, logic_var, *logic_options)
+
+        label = tk.Label(self, text=parameter_lab, anchor="w")
+        entry = tk.Entry(self, textvariable=strVar, width=32)
+        add_button = tk.Button(self, text="Add", command=lambda: self.add_search(parameter_key, strVar, options))
+
+
+        logic.grid(row=self.row_index+1, column=col+1)
+        label.grid(row=self.row_index, column=col+2)
+        entry.grid(row=self.row_index+1, column=col+2)
+        add_button.grid(row=self.row_index+1, column=col+3)
 
         self.row_index += 2
 
     # Add a search value to the things to search for
-    def add_search(parameter_key:str, strVar:tk.StringVar):
-        pass
+    def add_search(self, parameter_key:str, strVar:tk.StringVar, options:list):
+        compare_val = options[0]        # "==", ">=", "<=", ">", "<"
+        logic_val = options[1].get()    # "and", "or", "not"
+        if compare_val:
+            compare_val = compare_val.get()
+            sub_pattern = {logic_val : {compare_val : strVar.get()}}
+        else:
+            sub_pattern = {logic_val : strVar.get()}
+
+        self.patterns.append({parameter_key : sub_pattern})
+        print(self.patterns)
 
 
 
