@@ -63,26 +63,58 @@ def getImageFromURLs(urls:list, controller:CardDisplay):
 
 
 class SearchWidget(tk.Frame):
-    def __init__(self, master = None, cnf = ..., *, background = ..., bd = 0, bg = ..., border = 0, borderwidth = 0, class_ = "Frame", colormap = "", container = False, cursor = "", height = 0, highlightbackground = ..., highlightcolor = ..., highlightthickness = 0, name = ..., padx = 0, pady = 0, relief = "flat", takefocus = 0, visual = "", width = 0):
-        super().__init__(master, cnf, background=background, bd=bd, bg=bg, border=border, borderwidth=borderwidth, class_=class_, colormap=colormap, container=container, cursor=cursor, height=height, highlightbackground=highlightbackground, highlightcolor=highlightcolor, highlightthickness=highlightthickness, name=name, padx=padx, pady=pady, relief=relief, takefocus=takefocus, visual=visual, width=width)
+    def __init__(self, parent:tk.Tk, card_dicts:list):
+        super().__init__(parent)
+        self.cards = card_dicts
 
-        searchlab = tk.Label(self, text = "Search:")
-        search_text = tk.StringVar()
-        entry_bar = tk.Entry(self, textvariable=search_text, width=32)
-        search_button = tk.Button(self, text="Search", command = lambda: search_cards(cards, search_text) )
+        searchlab = tk.Label(self, text = "Search Parameters")
+        search_button = tk.Button(self, text="Search", command = lambda: self.search_cards() )
+
+        namelab = tk.Label(self, text = "Card Name:")
+        name_text = tk.StringVar()
+        name_bar = tk.Entry(self, textvariable=name_text, width=32)
+
+        oraclelab = tk.Label(self, text = "Card Text:")
+        oracle_text = tk.StringVar()
+        oracle_bar = tk.Entry(self, textvariable=oracle_text, width=32)
+
+        typelab = tk.Label(self, text = "Card Type:")
+        type_text = tk.StringVar()
+        type_bar = tk.Entry(self, textvariable=type_text, width=32)
+
+        colorlab = tk.Label(self, text = "Color:")
+        color_text = tk.StringVar()
+        color_bar = tk.Entry(self, textvariable=color_text, width=32)
+
+        coloridlab = tk.Label(self, text = "Color Identity:")
+        colorid_text = tk.StringVar()
+        colorid_bar = tk.Entry(self, textvariable=colorid_text, width=32)
+
+        cmclab = tk.Label(self, text = "Mana Value / Converted Mana Cost:")
+        cmc_text = tk.StringVar()
+        cmc_bar = tk.Entry(self, textvariable=cmc_text, width=32)
+
+
 
         searchlab.pack()
-        entry_bar.pack(side=tk.LEFT, padx=2, pady=2)
-        search_button.pack(side=tk.LEFT, padx=2, pady=2)
+        namelab.pack(padx=2, pady=2)
+        name_bar.pack(padx=2, pady=2)
+        oraclelab.pack(padx=2, pady=2)
+        oracle_bar.pack(padx=2, pady=2)
+        typelab.pack(padx=2, pady=2)
+        type_bar.pack(padx=2, pady=2)
+        colorlab.pack(padx=2, pady=2)
+        color_bar.pack(padx=2, pady=2)
+        coloridlab.pack(padx=2, pady=2)
+        colorid_bar.pack(padx=2, pady=2)
+        cmclab.pack(padx=2, pady=2)
+        cmc_bar.pack(padx=2, pady=2)
+        search_button.pack(side=tk.BOTTOM, padx=2, pady=2)
 
-
-# Shows a card's name, image, oracle text, and a sub window of other cards within it's similarity group
-def display_all_card_info(card_json:dict):
-    pass
-
-# Simple search by name
-def search_cards(cards:list, search_pattern:str) -> list:
-    pass
+    def search_cards() -> list:
+        # for search_param in search_parameters:
+        #     ...
+        pass
 
 
 if __name__ == "__main__":
@@ -171,6 +203,8 @@ if __name__ == "__main__":
     },
     ]
     app = App()
+    search_widget = SearchWidget(app, cards)
     display = CardDisplay(app, cards)
+    search_widget.pack()
     display.pack()
     app.mainloop()
