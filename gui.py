@@ -71,50 +71,71 @@ class SearchWidget(tk.Frame):
         search_button = tk.Button(self, text="Search", command = lambda: self.search_cards() )
 
         namelab = tk.Label(self, text = "Card Name:")
-        name_text = tk.StringVar()
-        name_bar = tk.Entry(self, textvariable=name_text, width=32)
+        self.name_text = tk.StringVar()
+        name_bar = tk.Entry(self, textvariable=self.name_text, width=32)
 
         oraclelab = tk.Label(self, text = "Card Text:")
-        oracle_text = tk.StringVar()
-        oracle_bar = tk.Entry(self, textvariable=oracle_text, width=32)
+        self.oracle_text = tk.StringVar()
+        oracle_bar = tk.Entry(self, textvariable=self.oracle_text, width=32)
 
         typelab = tk.Label(self, text = "Card Type:")
-        type_text = tk.StringVar()
-        type_bar = tk.Entry(self, textvariable=type_text, width=32)
+        self.type_text = tk.StringVar()
+        type_bar = tk.Entry(self, textvariable=self.type_text, width=32)
 
         colorlab = tk.Label(self, text = "Color:")
-        color_text = tk.StringVar()
-        color_bar = tk.Entry(self, textvariable=color_text, width=32)
+        self.color_text = tk.StringVar()
+        color_bar = tk.Entry(self, textvariable=self.color_text, width=32)
 
         coloridlab = tk.Label(self, text = "Color Identity:")
-        colorid_text = tk.StringVar()
-        colorid_bar = tk.Entry(self, textvariable=colorid_text, width=32)
+        self.colorid_text = tk.StringVar()
+        colorid_bar = tk.Entry(self, textvariable=self.colorid_text, width=32)
 
         cmclab = tk.Label(self, text = "Mana Value / Converted Mana Cost:")
-        cmc_text = tk.StringVar()
-        cmc_bar = tk.Entry(self, textvariable=cmc_text, width=32)
+        self.cmc_text = tk.StringVar()
+        cmc_bar = tk.Entry(self, textvariable=self.cmc_text, width=32)
 
+        # searchlab.grid(row=0, column=0)
+        namelab.grid(row=0, column=0, padx=2, pady=2)
+        name_bar.grid(row=1, column=0, padx=2, pady=2)
+        oraclelab.grid(row=2, column=0, padx=2, pady=2)
+        oracle_bar.grid(row=3, column=0, padx=2, pady=2)
+        typelab.grid(row=4, column=0, padx=2, pady=2)
+        type_bar.grid(row=5, column=0, padx=2, pady=2)
+        colorlab.grid(row=6, column=0, padx=2, pady=2)
+        color_bar.grid(row=7, column=0, padx=2, pady=2)
+        coloridlab.grid(row=8, column=0, padx=2, pady=2)
+        colorid_bar.grid(row=9, column=0, padx=2, pady=2)
+        cmclab.grid(row=10, column=0, padx=2, pady=2)
+        cmc_bar.grid(row=11, column=0, padx=2, pady=2)
+        search_button.grid(row=12, column=0, padx=2, pady=2)
 
+    def search_cards(self) -> list:
+        print("Name:", self.name_text.get())
+        print("Text:", self.oracle_text.get())
+        print("Type:", self.type_text.get())
+        print("Color:", self.color_text.get())
+        print("ColorID:", self.colorid_text.get())
+        print("CMC:", self.cmc_text.get())
 
-        searchlab.pack()
-        namelab.pack(padx=2, pady=2)
-        name_bar.pack(padx=2, pady=2)
-        oraclelab.pack(padx=2, pady=2)
-        oracle_bar.pack(padx=2, pady=2)
-        typelab.pack(padx=2, pady=2)
-        type_bar.pack(padx=2, pady=2)
-        colorlab.pack(padx=2, pady=2)
-        color_bar.pack(padx=2, pady=2)
-        coloridlab.pack(padx=2, pady=2)
-        colorid_bar.pack(padx=2, pady=2)
-        cmclab.pack(padx=2, pady=2)
-        cmc_bar.pack(padx=2, pady=2)
-        search_button.pack(side=tk.BOTTOM, padx=2, pady=2)
+        matches = []
+        for card in self.cards:
+            if self.name_text.get() != "" and self.name_text.get().lower() not in card["name"].lower():
+                continue
+            if self.oracle_text.get() != "" and self.oracle_text.get().lower() not in card["oracle_text"].lower():
+                continue
+            if self.type_text.get() != "" and self.type_text.get().lower() not in card["type_line"].lower():
+                continue
 
-    def search_cards() -> list:
-        # for search_param in search_parameters:
-        #     ...
-        pass
+            # These will need a different input type, or a change to the way search works:
+            # self.color_text.get()
+            # self.colorid_text.get()
+            # self.cmc_text.get()
+
+            matches.append(card)
+
+        print([match["name"] for match in matches])
+        return matches
+
 
 
 if __name__ == "__main__":
