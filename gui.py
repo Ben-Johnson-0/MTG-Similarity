@@ -133,13 +133,14 @@ class SearchWidget(tk.Frame):
     def add_search(self, parameter_key:str, strVar:tk.StringVar, options:list):
         compare_val = options[0]        # "==", ">=", "<=", ">", "<"
         logic_val = options[1].get()    # "and", "or", "not"
+        
+        search_dict = {"paramater": parameter_key, "logic_val" : logic_val}
+
         if compare_val:
             compare_val = compare_val.get()
-            sub_pattern = {logic_val : {compare_val : strVar.get()}}
-        else:
-            sub_pattern = {logic_val : strVar.get()}
+            search_dict["compare_val"] = compare_val
 
-        self.patterns.append({parameter_key : sub_pattern})
+        self.patterns.append(search_dict)
         print(self.patterns)
 
 
