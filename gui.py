@@ -177,6 +177,7 @@ class SearchWidget(tk.Frame):
             compare_val = compare_val.get()         # Only .get() if compare_val exists
             search_dict["compare_op"] = compare_val
 
+        strVar.set("")  # Clear the entry area
         self.patterns.append(search_dict)
         print(self.patterns)
 
