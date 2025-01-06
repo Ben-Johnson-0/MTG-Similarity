@@ -86,6 +86,12 @@ class SearchWidget(tk.Frame):
         search_button = tk.Button(self, text="Search", command = lambda: self.search_cards() )
         search_button.grid(row=self.row_index, column=3, padx=2, pady=2)
 
+        search_button = tk.Button(self, text="Clear Search", command = lambda: self.clear_patterns())
+        search_button.grid(row=self.row_index, column=2, padx=2, pady=2)
+
+    def clear_patterns(self):
+        self.patterns = []
+
     def search_cards(self) -> list:
         matches = []
         comparison_ops = {
