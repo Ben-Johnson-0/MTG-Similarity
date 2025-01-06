@@ -2,6 +2,7 @@ import tkinter as tk
 import threading
 from urllib.request import urlopen, Request
 from PIL import ImageTk
+import operator
 
 PROGRAM_VERSION = "MTGCardSimilarity/0.1"
 
