@@ -87,14 +87,50 @@ class SearchWidget(tk.Frame):
         search_button.grid(row=self.row_index, column=3, padx=2, pady=2)
 
     def search_cards(self) -> list:
-        print("Search is currently non-functional.")
-        return
         matches = []
+        comparison_ops = {
+            "==": operator.eq,
+            "!=": operator.ne,
+            ">=": operator.ge,
+            "<=": operator.le,
+            ">": operator.gt,
+            "<": operator.lt,
+        }
 
         for card in self.cards:
+            skip : bool = False
             for pattern in self.patterns:
-                continue    
-            matches.append(card)
+                search_param = pattern["parameter"]
+
+                # Patterns that have a comparison operator:
+                if pattern.get("compare_op"):
+                    # Call the comparison operator function on the card's value for the given parameter and the search pattern value
+                    result : bool = comparison_ops[pattern["compare_op"]]( card[search_param], int(pattern["value"]) )
+                    # Flip result if there's a logical not
+                    if (pattern["logic_op"] == "not"):
+                        result = not result
+
+                    if (not result):
+                        skip = True
+                
+                # Color fields:
+                elif "color" in search_param:
+                    print("Color search not yet implemented.")
+                    break
+
+                # Text-based fields
+                else:
+                    result = pattern["value"].lower() in card[search_param].lower()
+                    if (pattern["logic_op"] == "not"):
+                        result = not result
+                    
+                    if (not result):
+                        skip = True
+
+            
+            if not skip:
+                matches.append(card)
+
 
         print([match["name"] for match in matches])
         return matches
@@ -107,7 +143,7 @@ class SearchWidget(tk.Frame):
         if hasCompareOpts:
             compare_options = ("==", ">=", "<=", ">", "<")
             compare_var = tk.StringVar()
-            options[0] = compare_var                 # This needs to be tested
+            options[0] = compare_var
             compare_var.set(compare_options[0])
             compare = tk.OptionMenu(self, compare_var, *compare_options)
             compare.grid(row=self.row_index+1, column=col)
@@ -135,11 +171,11 @@ class SearchWidget(tk.Frame):
         compare_val = options[0]        # "==", ">=", "<=", ">", "<"
         logic_val = options[1].get()    # "and", "or", "not"
         
-        search_dict = {"paramater": parameter_key, "logic_val" : logic_val}
+        search_dict = {"parameter": parameter_key, "value" : strVar.get(), "logic_op" : logic_val}
 
         if compare_val:
-            compare_val = compare_val.get()
-            search_dict["compare_val"] = compare_val
+            compare_val = compare_val.get()         # Only .get() if compare_val exists
+            search_dict["compare_op"] = compare_val
 
         self.patterns.append(search_dict)
         print(self.patterns)
