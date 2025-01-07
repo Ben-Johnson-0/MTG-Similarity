@@ -119,14 +119,6 @@ class SearchWidget(tk.Frame):
 
     def search_cards(self) -> list:
         matches = []
-        comparison_ops = {
-            "==": operator.eq,
-            "!=": operator.ne,
-            ">=": operator.ge,
-            "<=": operator.le,
-            ">": operator.gt,
-            "<": operator.lt,
-        }
 
         for card in self.cards:
             skip : bool = False
@@ -136,7 +128,8 @@ class SearchWidget(tk.Frame):
                 # Patterns that have a comparison operator:
                 if pattern.get("compare_op"):
                     # Call the comparison operator function on the card's value for the given parameter and the search pattern value
-                    result : bool = comparison_ops[pattern["compare_op"]]( card[search_param], int(pattern["value"]) )
+                    # result : bool = comparison_ops[pattern["compare_op"]]( card[search_param], int(pattern["value"]) )
+                    result : bool = compare(pattern["compare_op"], int(card[search_param]), int(pattern["value"]))
                 
                 # Color fields:
                 elif "color" in search_param:
@@ -213,7 +206,18 @@ class SearchWidget(tk.Frame):
         self.patterns.append(search_dict)
         print(self.patterns)
 
-
+def compare(comparison_op:str, a:int, b:int) -> bool:
+    comparison_ops = {
+        "==": operator.eq,
+        "!=": operator.ne,
+        ">=": operator.ge,
+        "<=": operator.le,
+        ">": operator.gt,
+        "<": operator.lt,
+    }
+    if not comparison_ops.get(comparison_op):
+        raise ValueError(f"Invalid operator: '{comparison_op}'")
+    return comparison_ops[comparison_op](a, b)
 
 
 if __name__ == "__main__":
