@@ -92,6 +92,31 @@ class SearchWidget(tk.Frame):
     def clear_patterns(self):
         self.patterns = []
 
+    # Parse color-based search terms, returns a list of color abbreviations
+    def parse_colors(self, color_pattern : str) -> list:
+        colors = {"white":"W", "blue":"U", "red":"R", "black":"B", "green":"G", "colorless":"C"}
+        search_colors = set()
+        split_pattern = color_pattern.split()
+
+        # Parse colors for searching
+        for search_color in split_pattern:
+            # Turn "red white" into {"R", "W"}
+            if search_color.lower() in colors.keys():
+                search_colors.add(colors[search_color.lower()])
+            # Turn "UBG" into {"U", "B", "G"}
+            else:
+                for char in search_color:
+                    if char in "WUBRGC":
+                        search_colors.add(char)
+        
+
+        # Colorless can only be searched with an empty color list
+        if "C" in search_colors:
+            print("search_colors set to empty")
+            return []
+        
+        return list(search_colors)
+
     def search_cards(self) -> list:
         matches = []
         comparison_ops = {
@@ -112,27 +137,28 @@ class SearchWidget(tk.Frame):
                 if pattern.get("compare_op"):
                     # Call the comparison operator function on the card's value for the given parameter and the search pattern value
                     result : bool = comparison_ops[pattern["compare_op"]]( card[search_param], int(pattern["value"]) )
-                    # Flip result if there's a logical not
-                    if (pattern["logic_op"] == "not"):
-                        result = not result
-
-                    if (not result):
-                        skip = True
                 
                 # Color fields:
                 elif "color" in search_param:
-                    print("Color search not yet implemented.")
-                    break
+                    search_colors = self.parse_colors(pattern["value"])
+                    print("search_colors:", search_colors)
+                    if search_colors:
+                        result = all(color in card[search_param] for color in search_colors)
+                    # Colorless search must use an empty list
+                    else:
+                        result = (search_colors == card[search_param])
 
                 # Text-based fields
                 else:
                     result = pattern["value"].lower() in card[search_param].lower()
-                    if (pattern["logic_op"] == "not"):
-                        result = not result
-                    
-                    if (not result):
-                        skip = True
 
+                # Flip result if there's a logical not
+                if (pattern["logic_op"] == "not"):
+                    result = not result
+                
+                # Filter out if the result is False
+                if (not result):
+                    skip = True
             
             if not skip:
                 matches.append(card)
@@ -140,7 +166,7 @@ class SearchWidget(tk.Frame):
 
         print([match["name"] for match in matches])
         return matches
-    
+
     # Add a widget that contains a label, entry, and add button
     def add_search_parameter_widget(self, parameter_lab:str, parameter_key:str, strVar:tk.StringVar, hasCompareOpts:bool = False):
         col = 0
