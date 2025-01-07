@@ -92,31 +92,6 @@ class SearchWidget(tk.Frame):
     def clear_patterns(self):
         self.patterns = []
 
-    # Parse color-based search terms, returns a list of color abbreviations
-    def parse_colors(self, color_pattern : str) -> list:
-        colors = {"white":"W", "blue":"U", "red":"R", "black":"B", "green":"G", "colorless":"C"}
-        search_colors = set()
-        split_pattern = color_pattern.split()
-
-        # Parse colors for searching
-        for search_color in split_pattern:
-            # Turn "red white" into {"R", "W"}
-            if search_color.lower() in colors.keys():
-                search_colors.add(colors[search_color.lower()])
-            # Turn "UBG" into {"U", "B", "G"}
-            else:
-                for char in search_color:
-                    if char in "WUBRGC":
-                        search_colors.add(char)
-        
-
-        # Colorless can only be searched with an empty color list
-        if "C" in search_colors:
-            print("search_colors set to empty")
-            return []
-        
-        return list(search_colors)
-
     def search_cards(self) -> list:
         matches = []
 
@@ -128,13 +103,11 @@ class SearchWidget(tk.Frame):
                 # Patterns that have a comparison operator:
                 if pattern.get("compare_op"):
                     # Call the comparison operator function on the card's value for the given parameter and the search pattern value
-                    # result : bool = comparison_ops[pattern["compare_op"]]( card[search_param], int(pattern["value"]) )
                     result : bool = compare(pattern["compare_op"], int(card[search_param]), int(pattern["value"]))
                 
                 # Color fields:
                 elif "color" in search_param:
-                    search_colors = self.parse_colors(pattern["value"])
-                    print("search_colors:", search_colors)
+                    search_colors = parse_colors(pattern["value"])
                     if search_colors:
                         result = all(color in card[search_param] for color in search_colors)
                     # Colorless search must use an empty list
@@ -219,6 +192,30 @@ def compare(comparison_op:str, a:int, b:int) -> bool:
         raise ValueError(f"Invalid operator: '{comparison_op}'")
     return comparison_ops[comparison_op](a, b)
 
+# Parse color-based search terms, returns a list of color abbreviations
+def parse_colors(color_pattern : str) -> list:
+    colors = {"white":"W", "blue":"U", "red":"R", "black":"B", "green":"G", "colorless":"C"}
+    search_colors = set()
+    split_pattern = color_pattern.split()
+
+    # Parse colors for searching
+    for search_color in split_pattern:
+        # Turn "red white" into {"R", "W"}
+        if search_color.lower() in colors.keys():
+            search_colors.add(colors[search_color.lower()])
+        # Turn "UBG" into {"U", "B", "G"}
+        else:
+            for char in search_color:
+                if char in "WUBRGC":
+                    search_colors.add(char)
+    
+
+    # Colorless can only be searched with an empty color list
+    if "C" in search_colors:
+        print("search_colors set to empty")
+        return []
+    
+    return list(search_colors)
 
 if __name__ == "__main__":
     cards = [{
