@@ -68,29 +68,35 @@ class SearchWidget(tk.Frame):
         super().__init__(parent)
         self.cards = card_dicts
         self.row_index = 0
-        self.patterns = []  # List of search to match to
+        self.patterns = []          # List of search to match to
+        self.pattern_frames = []    # List of tk.Frames used for displaying patterns
 
-        self.name_text = tk.StringVar()
-        self.add_search_parameter_widget("Name", "name", self.name_text)
-        self.oracle_text = tk.StringVar()
-        self.add_search_parameter_widget("Card Text", "oracle_text", self.oracle_text)
-        self.type_text = tk.StringVar()
-        self.add_search_parameter_widget("Type", "type_line", self.type_text)
-        self.color_text = tk.StringVar()
-        self.add_search_parameter_widget("Colors", "colors", self.color_text)
-        self.colorid_text = tk.StringVar()
-        self.add_search_parameter_widget("Color Identity", "color_identity", self.colorid_text)
-        self.cmc_text = tk.StringVar()
-        self.add_search_parameter_widget("Mana Value / Converted Mana Cost", "cmc", self.cmc_text, hasCompareOpts=True)
+        # Search Inputs
+        name_text = tk.StringVar()
+        self.add_search_parameter_widget("Name", "name", name_text)
+        oracle_text = tk.StringVar()
+        self.add_search_parameter_widget("Card Text", "oracle_text", oracle_text)
+        type_text = tk.StringVar()
+        self.add_search_parameter_widget("Type", "type_line", type_text)
+        color_text = tk.StringVar()
+        self.add_search_parameter_widget("Colors", "colors", color_text)
+        colorid_text = tk.StringVar()
+        self.add_search_parameter_widget("Color Identity", "color_identity", colorid_text)
+        cmc_text = tk.StringVar()
+        self.add_search_parameter_widget("Mana Value / Converted Mana Cost", "cmc", cmc_text, hasCompareOpts=True)
 
+        # Search Patterns
+        self.row_index = 1
         search_button = tk.Button(self, text="Search", command = lambda: self.search_cards() )
-        search_button.grid(row=self.row_index, column=3, padx=2, pady=2)
+        search_button.grid(row=self.row_index, column=5, padx=2, pady=2)
 
         search_button = tk.Button(self, text="Clear Search", command = lambda: self.clear_patterns())
-        search_button.grid(row=self.row_index, column=2, padx=2, pady=2)
+        search_button.grid(row=self.row_index, column=4, padx=2, pady=2)
+        self.row_index += 1
 
-    def clear_patterns(self):
-        self.patterns = []
+    def clear_patterns(self) -> None:
+        for _ in range(len(self.patterns)):
+            self.remove_pattern_widget(self.patterns[0], self.pattern_frames[0])
 
     def search_cards(self) -> list:
         matches = []
@@ -165,7 +171,7 @@ class SearchWidget(tk.Frame):
         self.row_index += 2
 
     # Add a search value to the things to search for
-    def add_search(self, parameter_key:str, strVar:tk.StringVar, options:list):
+    def add_search(self, parameter_key:str, strVar:tk.StringVar, options:list) -> None:
         compare_val = options[0]        # "==", ">=", "<=", ">", "<"
         logic_val = options[1].get()    # "and", "or", "not"
         
@@ -177,7 +183,38 @@ class SearchWidget(tk.Frame):
 
         strVar.set("")  # Clear the entry area
         self.patterns.append(search_dict)
-        print(self.patterns)
+        self.add_pattern_widget(search_dict, column=4)
+
+    def add_pattern_widget(self, pattern:dict, column:int) -> None:
+        frame = tk.Frame(self)
+        x_button = tk.Button(frame, text="X", command=lambda: self.remove_pattern_widget(pattern, frame))
+        label = tk.Label(frame, text=pattern)
+        self.pattern_frames.append(frame)
+
+        frame.grid(row=self.row_index, column=column)
+        x_button.grid(row=0, column=0)
+        label.grid(row=0, column=1)
+        self.row_index += 1
+
+    def remove_pattern_widget(self, pattern:dict, frame:tk.Frame) -> None:
+        update_index = self.pattern_frames.index(frame)
+
+        self.patterns.remove(pattern)
+        self.pattern_frames.remove(frame)
+
+        frame.grid_forget()
+        frame.destroy()
+        self.row_index -= 1
+
+        self.move_pattern_widgets(update_index)
+
+    def move_pattern_widgets(self, start_idx:int) -> None:
+        if len(self.pattern_frames) < start_idx:
+            return
+        
+        for i in range(start_idx, len(self.pattern_frames)):
+            self.pattern_frames[i].grid(row=i+2)    # +2 offset to match because row 1 is [Clear Search] button
+
 
 def compare(comparison_op:str, a:int, b:int) -> bool:
     comparison_ops = {
@@ -212,7 +249,6 @@ def parse_colors(color_pattern : str) -> list:
 
     # Colorless can only be searched with an empty color list
     if "C" in search_colors:
-        print("search_colors set to empty")
         return []
     
     return list(search_colors)
