@@ -23,7 +23,7 @@ def get_card_list(raw_json_file: str | None = None) -> list:
 
 # Given a list of cards, return groups of cards that are strongly connected for similarity
 def card_similarity(cards:list, num_minhashes:int, blocks:int, rows_per_block:int, votes:int, max_rows:int) -> dict:
-    imp_shingles = imp_shins(all_cards, minVal=4)               # Find all the important shingles that appear atleast minVal times
+    imp_shingles = imp_shins(cards, minVal=4)               # Find all the important shingles that appear atleast minVal times
     mat = generate_shingle_bin_matrix(imp_shingles, cards)      # Apply the characteristic function to all files to make a matrix - each card will have a binary representation for each of the important shingles
     mat = minhash(mat, num_minhashes, max_rows)                 # Minhash the matrix
     sim_mat = sim_vote(mat, votes, blocks, rows_per_block)      # Obtain the adjacency matrix of similar documents
@@ -191,7 +191,8 @@ def imp_shins(card_list:list, minVal:int = 4) -> dict:
     print(len(ordered_shin), 'shingles')
     return ordered_shin
 
-def create_cards_file(cards, components, fname):
+# Create a list of card dictionaries with custom keys and a more limited set of keys
+def gen_custom_data(cards:list, components:dict) -> list:
     new_cards = []
 
     useful_keys = ["name","released_at","uri","scryfall_uri","image_uris","mana_cost","cmc","type_line","oracle_text","colors","color_identity","set_name","collector_number","rarity","flavor_text","artist",]
@@ -205,10 +206,14 @@ def create_cards_file(cards, components, fname):
             new_card = {"card_id":card_id}
             new_card["similarity_id"] = comp_id
             for card_key in useful_keys:
-                new_card[card_key] = cards[card_id][card_key]
+                new_card[card_key] = cards[card_id].get(card_key)
+            new_cards.append(new_card)
+    
+    return new_cards
 
+def save_dict(d:dict, fname:str):
     with open(fname, "w") as fd:
-        json_obj = dumps(new_cards, indent=2)
+        json_obj = dumps(d, indent=2)
         fd.write(json_obj)
 
 
@@ -276,7 +281,5 @@ if __name__ == "__main__":
 
     new_file = "card-similarity.json"
     print(f"\nSaving to '{new_file}'...")
-    with open(new_file, "w") as fd:
-        json_obj = json.dumps(components, indent=2)
-        fd.write(json_obj)
+    save_dict(components, new_file)
     print("Saved.")
