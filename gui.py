@@ -11,6 +11,10 @@ class App(tk.Tk):
         super().__init__()
 
         self.title("MTG Card Similarity")
+        display = CardDisplay(self, cards)
+        search_widget = SearchWidget(self, cards, display)
+        search_widget.pack()
+        display.pack()
 
 
 class CardDisplay(tk.Frame):
@@ -358,8 +362,4 @@ if __name__ == "__main__":
     },
     ]
     app = App()
-    display = CardDisplay(app, cards)
-    search_widget = SearchWidget(app, cards, display)
-    search_widget.pack()
-    display.pack()
     app.mainloop()
