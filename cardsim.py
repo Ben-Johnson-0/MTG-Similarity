@@ -12,7 +12,7 @@ import sys
 import numpy as np
 from sympy import primerange
 from random import choice, randrange
-
+from json import dumps
 
 # Return a list of card dictionaries
 def get_card_list(raw_json_file: str | None = None) -> list:
@@ -191,6 +191,25 @@ def imp_shins(card_list:list, minVal:int = 4) -> dict:
     print(len(ordered_shin), 'shingles')
     return ordered_shin
 
+def create_cards_file(cards, components, fname):
+    new_cards = []
+
+    useful_keys = ["name","released_at","uri","scryfall_uri","image_uris","mana_cost","cmc","type_line","oracle_text","colors","color_identity","set_name","collector_number","rarity","flavor_text","artist",]
+    all_lens = [0] * len(components)
+    for comp_id in components.keys():
+        comp_len = len(components[comp_id])
+        all_lens[int(comp_id)] = comp_len
+
+        # Reunite the cards with their names (they were reduced to indices after generating their characteristic binary representation)
+        for card_id in components[comp_id]:
+            new_card = {"card_id":card_id}
+            new_card["similarity_id"] = comp_id
+            for card_key in useful_keys:
+                new_card[card_key] = cards[card_id][card_key]
+
+    with open(fname, "w") as fd:
+        json_obj = dumps(new_cards, indent=2)
+        fd.write(json_obj)
 
 
 if __name__ == "__main__":
@@ -226,8 +245,6 @@ if __name__ == "__main__":
         rows_per_block = int(sys.argv[4])
 
     from statistics import median
-    import json
-
 
     # Calculate card similarity
     all_cards = get_card_list(fname)                             # Get card list
