@@ -19,23 +19,39 @@ class CardDisplay(tk.Frame):
 
         self.imagelab_frame = tk.Frame(self)
         self.imagelab_frame.pack()
+        self.imagelabs = [tk.Label(self.imagelab_frame, text="Placeholder", width=66, height=42)]
 
-        self.imagelabs = []
+        self.bind("<<ImagesLoaded>>", self.on_image_loaded)
+        self.bind("<<CardsChanged>>", self.on_cards_changed)
+        self.set_cards(card_dicts)
 
-        self.card_dicts = card_dicts
+    def on_image_loaded(self, event):
+        for lab, img in zip(self.imagelabs, self.images):
+            lab.config(image=img, text="", width=img.width(), height=img.height())
+
+    def on_cards_changed(self, event):
         urls = [card.get("image_uris").get("normal") for card in self.card_dicts]
-
         for _ in urls:
             label = tk.Label(self.imagelab_frame, text="Loading...", width=66, height=42)
             label.pack(side=tk.LEFT, padx=2, pady=2)
             self.imagelabs.append(label)
 
-        self.bind("<<ImagesLoaded>>", self.on_image_loaded)
         threading.Thread(target=getImageFromURLs, args=(urls, self)).start()
+    
+    def set_cards(self, cards:list):
+        if type(cards) != list:
+            raise ValueError(f"Argument 'cards' must be of type 'list'. set_cards was given '{type(cards)}'.")
+        
+        self.remove_all_images()
+        self.card_dicts = cards
+        self.event_generate("<<CardsChanged>>")
 
-    def on_image_loaded(self, event):
-        for lab, img in zip(self.imagelabs, self.images):
-            lab.config(image=img, text="", width=img.width(), height=img.height())
+    def remove_all_images(self):
+        for lab in self.imagelabs:
+            lab.pack_forget()
+            lab.destroy()
+        self.imagelabs = []
+
 
 # Fetches a list of card images from URLs
 def getImageFromURLs(urls:list, controller:CardDisplay):
@@ -60,16 +76,18 @@ def getImageFromURLs(urls:list, controller:CardDisplay):
             controller.event_generate("<<ImagesLoaded>>")
 
     # Start image fetching
-    fetch_next_image(0)
+    if len(urls):
+        fetch_next_image(0)
 
 
 class SearchWidget(tk.Frame):
-    def __init__(self, parent:tk.Tk, card_dicts:list):
+    def __init__(self, parent:tk.Tk, card_dicts:list, card_display:CardDisplay):
         super().__init__(parent)
         self.cards = card_dicts
         self.row_index = 0
         self.patterns = []          # List of search to match to
         self.pattern_frames = []    # List of tk.Frames used for displaying patterns
+        self.card_display = card_display
 
         # Search Inputs
         name_text = tk.StringVar()
@@ -137,6 +155,7 @@ class SearchWidget(tk.Frame):
 
 
         print([match["name"] for match in matches])
+        self.card_display.set_cards(matches)
         return matches
 
     # Add a widget that contains a label, entry, and add button
@@ -339,8 +358,8 @@ if __name__ == "__main__":
     },
     ]
     app = App()
-    search_widget = SearchWidget(app, cards)
     display = CardDisplay(app, cards)
+    search_widget = SearchWidget(app, cards, display)
     search_widget.pack()
     display.pack()
     app.mainloop()
