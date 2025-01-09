@@ -76,14 +76,14 @@ class SingleCard(tk.Frame):
 
 # Fetches a list of card images from URLs
 def getImageFromURLs(urls:list, controller:CardDisplay):
-    images = []
-
     def fetch_next_image(index:int):
         if index < len(urls):
             try:
-                for url in urls:
-                    req = Request(url, headers = { "User-Agent": PROGRAM_VERSION })
-                    images.append(ImageTk.PhotoImage(file=urlopen(req)))
+                url = urls[index]
+                req = Request(url, headers = { "User-Agent": PROGRAM_VERSION })
+                image = ImageTk.PhotoImage(file=urlopen(req))
+                controller.cardlabs[index].img = image
+                controller.cardlabs[index].event_generate("<<ImageLoaded>>")
 
             except Exception as e:
                 print(f"Error loading images: {e}")
