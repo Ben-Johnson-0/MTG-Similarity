@@ -11,10 +11,11 @@ class App(tk.Tk):
         super().__init__()
 
         self.title("MTG Card Similarity")
-        display = CardDisplay(self, cards, 5)
+        self.geometry("2004x1100")
+        display = CardDisplay(self, cards, cards_per_row=4)
         search_widget = SearchWidget(self, cards, display)
         search_widget.pack()
-        display.pack()
+        display.pack(fill="both", expand=True)
 
 
 class SimilarityMenu(tk.Frame):
@@ -26,10 +27,20 @@ class CardDisplay(tk.Frame):
     def __init__(self, parent:tk.Tk, card_dicts:list, cards_per_row:int):
         super().__init__(parent)
 
+        self.canvas = tk.Canvas(self, border=5)
+        self.scrollbar = tk.Scrollbar(parent, orient="vertical", command=self.canvas.yview)
+
         self.cards_per_row = cards_per_row
-        self.cardlab_frame = tk.Frame(self)
+        self.cardlab_frame = tk.Frame(self.canvas, border=1)
         self.cardlab_frame.pack()
         self.cardlabs = [SingleCard(self.cardlab_frame)]    # placeholder card
+
+        self.cardlab_frame.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
+        self.canvas.create_window((0,0), window=self.cardlab_frame, anchor="nw")
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+
+        self.canvas.pack(side="left", fill="both", expand=True)
+        self.scrollbar.pack(side="right", fill="y")
 
         self.bind("<<CardsChanged>>", self.on_cards_changed)
         self.set_cards(card_dicts)
