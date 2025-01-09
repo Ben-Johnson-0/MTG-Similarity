@@ -203,8 +203,7 @@ def gen_custom_data(cards:list, components:dict) -> list:
 
         # Reunite the cards with their names (they were reduced to indices after generating their characteristic binary representation)
         for card_id in components[comp_id]:
-            new_card = {"card_id":card_id}
-            new_card["similarity_id"] = comp_id
+            new_card = {"card_id": int(card_id), "similarity_id": int(comp_id)}     # Must be cast to int, otherwise they can't be saved in json bc they're np.int64
             for card_key in useful_keys:
                 new_card[card_key] = cards[card_id].get(card_key)
             new_cards.append(new_card)
