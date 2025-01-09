@@ -17,28 +17,30 @@ class App(tk.Tk):
         display.pack()
 
 
+class SimilarityMenu(tk.Frame):
+    def __init__(self):
+        pass
+
+
 class CardDisplay(tk.Frame):
     def __init__(self, parent:tk.Tk, card_dicts:list):
         super().__init__(parent)
 
-        self.imagelab_frame = tk.Frame(self)
-        self.imagelab_frame.pack()
-        self.imagelabs = [tk.Label(self.imagelab_frame, text="Placeholder", width=66, height=42)]
+        self.cardlab_frame = tk.Frame(self)
+        self.cardlab_frame.pack()
+        self.cardlabs = [SingleCard(self.cardlab_frame)]    # placeholder card
+        self.cardlabs[0].pack(side=tk.LEFT, padx=2, pady=2)
 
-        self.bind("<<ImagesLoaded>>", self.on_image_loaded)
         self.bind("<<CardsChanged>>", self.on_cards_changed)
         self.set_cards(card_dicts)
 
-    def on_image_loaded(self, event):
-        for lab, img in zip(self.imagelabs, self.images):
-            lab.config(image=img, text="", width=img.width(), height=img.height())
-
     def on_cards_changed(self, event):
-        urls = [card.get("image_uris").get("normal") for card in self.card_dicts]
+        missing_link = "https://cards.scryfall.io/normal/front/a/3/a3da3387-454c-4c09-b78f-6fcc36c426ce.jpg"
+        urls = [card.get("image_uris").get("normal") if card.get("image_uris") and card.get("image_uris").get("normal") else missing_link for card in self.card_dicts]
         for _ in urls:
-            label = tk.Label(self.imagelab_frame, text="Loading...", width=66, height=42)
+            label = SingleCard(self.cardlab_frame)
             label.pack(side=tk.LEFT, padx=2, pady=2)
-            self.imagelabs.append(label)
+            self.cardlabs.append(label)
 
         threading.Thread(target=getImageFromURLs, args=(urls, self)).start()
     
@@ -51,10 +53,25 @@ class CardDisplay(tk.Frame):
         self.event_generate("<<CardsChanged>>")
 
     def remove_all_images(self):
-        for lab in self.imagelabs:
+        for lab in self.cardlabs:
             lab.pack_forget()
             lab.destroy()
-        self.imagelabs = []
+        self.cardlabs = []
+
+
+class SingleCard(tk.Frame):
+    def __init__(self, parent:tk.Frame):
+        super().__init__(parent)
+
+        self.lab = tk.Label(self, text="Loading...", width=66, height=42)
+        self.lab.pack()
+        self.img = None
+        self.bind("<<ImageLoaded>>", self.on_image_loaded)
+    
+    def on_image_loaded(self, event):
+        print("SingleCard: on_image_loaded")
+        print(self.img)
+        self.lab.config(image=self.img, text="", width=self.img.width(), height=self.img.height())
 
 
 # Fetches a list of card images from URLs
@@ -73,11 +90,6 @@ def getImageFromURLs(urls:list, controller:CardDisplay):
 
             # Schedule next image download after 50ms delay - per Scryfall's request
             controller.after(50, fetch_next_image, index + 1)
-
-        # Done fetching images
-        else:
-            controller.images = images
-            controller.event_generate("<<ImagesLoaded>>")
 
     # Start image fetching
     if len(urls):
@@ -277,89 +289,19 @@ def parse_colors(color_pattern : str) -> list:
     return list(search_colors)
 
 if __name__ == "__main__":
-    cards = [{
-        "object": "card",
-        "name": "Static Orb",
-        "released_at": "2001-04-11",
-        "uri": "https://api.scryfall.com/cards/86bf43b1-8d4e-4759-bb2d-0b2e03ba7012",
-        "scryfall_uri": "https://scryfall.com/card/7ed/319/static-orb?utm_source=api",
-        "image_uris": {
-            "small": "https://cards.scryfall.io/small/front/8/6/86bf43b1-8d4e-4759-bb2d-0b2e03ba7012.jpg?1562242171",
-            "large": "https://cards.scryfall.io/large/front/8/6/86bf43b1-8d4e-4759-bb2d-0b2e03ba7012.jpg?1562242171",
-            "normal": "https://cards.scryfall.io/normal/front/8/6/86bf43b1-8d4e-4759-bb2d-0b2e03ba7012.jpg?1562242171",
-            "png": "https://cards.scryfall.io/png/front/8/6/86bf43b1-8d4e-4759-bb2d-0b2e03ba7012.png?1562242171",
-            "art_crop": "https://cards.scryfall.io/art_crop/front/8/6/86bf43b1-8d4e-4759-bb2d-0b2e03ba7012.jpg?1562242171",
-            "border_crop": "https://cards.scryfall.io/border_crop/front/8/6/86bf43b1-8d4e-4759-bb2d-0b2e03ba7012.jpg?1562242171"
-        },
-        "mana_cost": "{3}",
-        "cmc": 3.0,
-        "type_line": "Artifact",
-        "oracle_text": "As long as Static Orb is untapped, players can't untap more than two permanents during their untap steps.",
-        "colors": [],
-        "color_identity": [],
-        "set_name": "Seventh Edition",
-        "collector_number": "319",
-        "rarity": "rare",
-        "flavor_text": "The warriors fought against the paralyzing waves until even their thoughts froze in place.",
-        "artist": "Terese Nielsen",
-    },
-    {
-        "object": "card",
-        "name": "Sensory Deprivation",
-        "released_at": "2013-07-19",
-        "uri": "https://api.scryfall.com/cards/7050735c-b232-47a6-a342-01795bfd0d46",
-        "scryfall_uri": "https://scryfall.com/card/m14/71/sensory-deprivation?utm_source=api",
-        "image_uris": {
-            "small": "https://cards.scryfall.io/small/front/7/0/7050735c-b232-47a6-a342-01795bfd0d46.jpg?1562830795",
-            "normal": "https://cards.scryfall.io/normal/front/7/0/7050735c-b232-47a6-a342-01795bfd0d46.jpg?1562830795",
-            "large": "https://cards.scryfall.io/large/front/7/0/7050735c-b232-47a6-a342-01795bfd0d46.jpg?1562830795",
-            "png": "https://cards.scryfall.io/png/front/7/0/7050735c-b232-47a6-a342-01795bfd0d46.png?1562830795",
-            "art_crop": "https://cards.scryfall.io/art_crop/front/7/0/7050735c-b232-47a6-a342-01795bfd0d46.jpg?1562830795",
-            "border_crop": "https://cards.scryfall.io/border_crop/front/7/0/7050735c-b232-47a6-a342-01795bfd0d46.jpg?1562830795"
-        },
-        "mana_cost": "{U}",
-        "cmc": 1.0,
-        "type_line": "Enchantment \u2014 Aura",
-        "oracle_text": "Enchant creature\nEnchanted creature gets -3/-0.",
-        "colors": [
-        "U"
-        ],
-        "color_identity": [
-        "U"
-        ],
-        "set_name": "Magic 2014",
-        "rarity": "common",
-        "flavor_text": "They call it \"stitcher's anesthesia,\" a spell to deaden the senses while the mad doctors begin their grisly work.",
-        "artist": "Steven Belledin",
-    },
-    {
-        "object": "card",
-        "name": "Road of Return",
-        "released_at": "2019-08-23",
-        "uri": "https://api.scryfall.com/cards/e718b21b-46d1-4844-985c-52745657b1ac",
-        "scryfall_uri": "https://scryfall.com/card/c19/34/road-of-return?utm_source=api",
-        "image_uris": {
-            "small": "https://cards.scryfall.io/small/front/e/7/e718b21b-46d1-4844-985c-52745657b1ac.jpg?1568003608",
-            "normal": "https://cards.scryfall.io/normal/front/e/7/e718b21b-46d1-4844-985c-52745657b1ac.jpg?1568003608",
-            "large": "https://cards.scryfall.io/large/front/e/7/e718b21b-46d1-4844-985c-52745657b1ac.jpg?1568003608",
-            "png": "https://cards.scryfall.io/png/front/e/7/e718b21b-46d1-4844-985c-52745657b1ac.png?1568003608",
-            "art_crop": "https://cards.scryfall.io/art_crop/front/e/7/e718b21b-46d1-4844-985c-52745657b1ac.jpg?1568003608",
-            "border_crop": "https://cards.scryfall.io/border_crop/front/e/7/e718b21b-46d1-4844-985c-52745657b1ac.jpg?1568003608"
-        },
-        "mana_cost": "{G}{G}",
-        "cmc": 2.0,
-        "type_line": "Sorcery",
-        "oracle_text": "Choose one \u2014\n\u2022 Return target permanent card from your graveyard to your hand.\n\u2022 Put your commander into your hand from the command zone.\nEntwine {2} (Choose both if you pay the entwine cost.)",
-        "colors": [
-        "G"
-        ],
-        "color_identity": [
-        "G"
-        ],
-        "set_name": "Commander 2019",
-        "rarity": "rare",
-        "artist": "Jonas De Ro",
-    },
-    ]
+    # Quick implementation of card similarity
+    # from cardsim import get_card_list, card_similarity, gen_custom_data, save_dict
+    # # Calculate card similarity
+    # all_cards = get_card_list()                             # Get card list
+    # card_names = [entry["name"] for entry in all_cards]     # Get all the card names for later
+    # components = card_similarity(all_cards, num_minhashes=144, blocks=24, rows_per_block=6, votes=6, max_rows=500)
+    # cards = gen_custom_data(all_cards, components)
+    # save_dict(cards, "refined-cards.json")
+
+    import json
+    with open("refined-cards.json", "r") as fd:
+        cards = json.loads(fd.read())[:15]
+        print(len(cards), type(cards))
+
     app = App()
     app.mainloop()
