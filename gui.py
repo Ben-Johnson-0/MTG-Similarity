@@ -11,7 +11,7 @@ class App(tk.Tk):
         super().__init__()
 
         self.title("MTG Card Similarity")
-        display = CardDisplay(self, cards)
+        display = CardDisplay(self, cards, 5)
         search_widget = SearchWidget(self, cards, display)
         search_widget.pack()
         display.pack()
@@ -23,13 +23,13 @@ class SimilarityMenu(tk.Frame):
 
 
 class CardDisplay(tk.Frame):
-    def __init__(self, parent:tk.Tk, card_dicts:list):
+    def __init__(self, parent:tk.Tk, card_dicts:list, cards_per_row:int):
         super().__init__(parent)
 
+        self.cards_per_row = cards_per_row
         self.cardlab_frame = tk.Frame(self)
         self.cardlab_frame.pack()
         self.cardlabs = [SingleCard(self.cardlab_frame)]    # placeholder card
-        self.cardlabs[0].pack(side=tk.LEFT, padx=2, pady=2)
 
         self.bind("<<CardsChanged>>", self.on_cards_changed)
         self.set_cards(card_dicts)
@@ -37,9 +37,9 @@ class CardDisplay(tk.Frame):
     def on_cards_changed(self, event):
         missing_link = "https://cards.scryfall.io/normal/front/a/3/a3da3387-454c-4c09-b78f-6fcc36c426ce.jpg"
         urls = [card.get("image_uris").get("normal") if card.get("image_uris") and card.get("image_uris").get("normal") else missing_link for card in self.card_dicts]
-        for _ in urls:
+        for i, _ in enumerate(urls):
             label = SingleCard(self.cardlab_frame)
-            label.pack(side=tk.LEFT, padx=2, pady=2)
+            label.grid(row = i // self.cards_per_row, column= i % self.cards_per_row, padx=2, pady=2)
             self.cardlabs.append(label)
 
         threading.Thread(target=getImageFromURLs, args=(urls, self)).start()
@@ -54,7 +54,7 @@ class CardDisplay(tk.Frame):
 
     def remove_all_images(self):
         for lab in self.cardlabs:
-            lab.pack_forget()
+            lab.grid_forget()
             lab.destroy()
         self.cardlabs = []
 
