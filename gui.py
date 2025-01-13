@@ -2,6 +2,7 @@ import tkinter as tk
 from threading import Thread, Event
 from urllib.request import urlopen, Request
 from PIL import ImageTk
+from time import sleep
 import operator
 
 PROGRAM_VERSION = "MTGCardSimilarity/0.1"
@@ -29,8 +30,8 @@ class CardDisplay(tk.Frame):
 
         self.image_limit = cards_per_row * 4
         self.image_count = 0
-        self.num_cards = 0
         self.load_thread = None
+        self.stop_event = Event()
         self.pause_event = Event()
         self.pause_event.set()
 
@@ -40,7 +41,7 @@ class CardDisplay(tk.Frame):
         self.cards_per_row = cards_per_row
         self.cardlab_frame = tk.Frame(self.canvas, border=1)
         self.cardlab_frame.pack()
-        self.cardlabs = [SingleCard(self.cardlab_frame)]    # placeholder card
+        self.cardlabs = []
 
         self.canvas.bind_all("<MouseWheel>", self.on_scroll)    # Windows and Linux
         self.canvas.bind_all("<Button-4>", self.on_scroll)      # Linux scrolling up
@@ -53,39 +54,8 @@ class CardDisplay(tk.Frame):
         self.canvas.pack(side="left", fill="both", expand=True)
         self.scrollbar.pack(side="right", fill="y")
 
-        self.bind("<<CardsChanged>>", self.on_cards_changed)
         self.canvas.bind("<Configure>", self.on_scroll)
         self.set_cards(card_dicts)
-
-    def gen_card_labels(self):
-         # Generate up to image_limit labels
-        for i in range(self.image_count, min(self.image_limit, self.num_cards)):
-            label = SingleCard(self.cardlab_frame)
-            label.grid(row = i // self.cards_per_row, column= i % self.cards_per_row, padx=2, pady=2)
-            self.cardlabs.append(label)
-
-    def on_cards_changed(self, event):
-        # Retrieve the links
-        missing_link = "https://cards.scryfall.io/normal/front/a/3/a3da3387-454c-4c09-b78f-6fcc36c426ce.jpg"
-        urls = [card.get("image_uris").get("normal") if card.get("image_uris") and card.get("image_uris").get("normal") else missing_link for card in self.card_dicts]
-
-        # Generate card labels
-        self.num_cards = len(urls)
-        self.gen_card_labels()
-
-        # Set up the thread
-        self.pause_event.set()  # Ensure the thread is active
-        self.load_thread = Thread(target=self.getImageFromURLs, args=(urls,))
-        self.load_thread.daemon = True  # Allow thread to close with the app
-        self.load_thread.start()
-    
-    def set_cards(self, cards:list):
-        if type(cards) != list:
-            raise ValueError(f"Argument 'cards' must be of type 'list'. set_cards was given '{type(cards)}'.")
-        
-        self.remove_all_images()
-        self.card_dicts = cards
-        self.event_generate("<<CardsChanged>>")
 
     def remove_all_images(self):
         for lab in self.cardlabs:
@@ -93,50 +63,92 @@ class CardDisplay(tk.Frame):
             lab.destroy()
         self.cardlabs = []
 
+    def gen_card_labels(self):
+        # Generate up to image_limit labels
+        print(f" image_count = {self.image_count}\n image limit = {self.image_limit}\n len(cards) = {len(self.cards)}")
+        for i in range(self.image_count, min(self.image_limit, len(self.cards))):
+            label = SingleCard(self.cardlab_frame)
+            label.grid(row = i // self.cards_per_row, column= i % self.cards_per_row, padx=2, pady=2)
+            self.cardlabs.append(label)
+
+    def set_cards(self, cards:list):
+        print("setting cards")
+        # Stop current thread
+        if self.load_thread and self.load_thread.is_alive():
+            print("Stopping current thread...")
+            self.stop_event.set()   # signal stop
+            self.pause_event.set()   # set pause event, so we can exit the loop
+            self.load_thread.join() # wait for it to finish
+            print("Thread stopped")
+
+        print("resetting state")
+        # Reset state
+        self.stop_event.clear()
+        self.image_limit = self.cards_per_row * 4
+        self.image_count = 0
+        self.cards = cards
+
+        print("removing images and generating new labels")
+        # Clear old images and Generate labels
+        self.remove_all_images()
+        self.gen_card_labels()
+
+        # Retrieve the links
+        missing_link = "https://cards.scryfall.io/normal/front/a/3/a3da3387-454c-4c09-b78f-6fcc36c426ce.jpg"
+        urls = [card.get("image_uris").get("normal") if card.get("image_uris") and card.get("image_uris").get("normal") else missing_link for card in self.cards]
+
+        print("setting up thread")
+        # Set up the thread
+        self.pause_event.set()  # Ensure the thread is active
+        self.load_thread = Thread(target=self.getImageFromURLs, args=(urls,))
+        self.load_thread.daemon = True  # Allow thread to close with the app
+        self.load_thread.start()
+
     # Fetches a list of card images from URLs
     def getImageFromURLs(self, urls: list):
-        def worker():
-            index = 0
-            while index < len(urls):
-                # Wait if the thread is paused
+        for index in range(len(urls)):
+            # Wait if the thread is paused
+            self.pause_event.wait()
+
+            # Pause if at limit
+            if index >= self.image_limit:
+                print("Reached image limit, pausing thread")
+                self.pause_event.clear()
                 self.pause_event.wait()
+            
+            # Stop loading images if images were changed
+            if self.stop_event.is_set():
+                print("Thread stopped before completing")
+                break
 
-                if index >= self.image_limit:
-                    print("Reached image limit, pausing thread")
-                    self.pause_event.clear()
-                    self.pause_event.wait()  # Pause here until the event is set again
+            try:
+                url = urls[index]
+                print(f"Loading image {index + 1}/{len(urls)} from {url}")
 
-                try:
-                    url = urls[index]
-                    print(f"Loading image {index + 1}/{len(urls)} from {url}")
+                req = Request(url, headers={"User-Agent": PROGRAM_VERSION})
+                image = ImageTk.PhotoImage(file=urlopen(req))
 
-                    req = Request(url, headers={"User-Agent": PROGRAM_VERSION})
-                    image = ImageTk.PhotoImage(file=urlopen(req))
+                # Assign image to the corresponding label
+                self.cardlabs[index].img = image
+                self.cardlabs[index].event_generate("<<ImageLoaded>>")
 
-                    # Assign image to the corresponding label
-                    self.cardlabs[index].img = image
-                    self.cardlabs[index].event_generate("<<ImageLoaded>>")
+                self.image_count += 1
 
-                    self.image_count += 1
-                    index += 1
+            except Exception as e:
+                print(f"Error loading image at index {index}: {e}")
 
-                except Exception as e:
-                    print(f"Error loading image at index {index}: {e}")
-                    index += 1  # Skip to the next image on error
+            # 50ms delay for Scryfall's request
+            sleep(0.05)
 
-        # Start the worker thread
-        self.load_thread = Thread(target=worker, daemon=True)
-        self.load_thread.start()
 
     def on_scroll(self, event=None):
         # Calculate scrollbar position
         pos = self.canvas.yview()[1]  # Position is a tuple (start, end) -> end
-        print("pos:", pos)
 
         # Unpause thread at 90% scroll and limit < number of cards in display's list
-        if pos > 0.9 and self.image_limit < self.num_cards:
+        if pos > 0.9 and self.image_limit < len(self.cards):
             print("setting unpause")
-            self.image_limit += self.cards_per_row * 4  # Increase the limit
+            self.image_limit += self.cards_per_row * 4
             print("image limit:", self.image_limit)
             self.gen_card_labels()
             self.pause_event.set()  # Unpause the thread if paused
