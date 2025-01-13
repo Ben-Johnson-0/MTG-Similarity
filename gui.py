@@ -1,5 +1,5 @@
 import tkinter as tk
-import threading
+from threading import Thread, Event
 from urllib.request import urlopen, Request
 from PIL import ImageTk
 import operator
@@ -27,6 +27,13 @@ class CardDisplay(tk.Frame):
     def __init__(self, parent:tk.Tk, card_dicts:list, cards_per_row:int):
         super().__init__(parent)
 
+        self.image_limit = cards_per_row * 4
+        self.image_count = 0
+        self.num_cards = 0
+        self.load_thread = None
+        self.pause_event = Event()
+        self.pause_event.set()
+
         self.canvas = tk.Canvas(self, border=5)
         self.scrollbar = tk.Scrollbar(parent, orient="vertical", command=self.canvas.yview)
 
@@ -35,7 +42,11 @@ class CardDisplay(tk.Frame):
         self.cardlab_frame.pack()
         self.cardlabs = [SingleCard(self.cardlab_frame)]    # placeholder card
 
+        self.canvas.bind_all("<MouseWheel>", self.on_scroll)    # Windows and Linux
+        self.canvas.bind_all("<Button-4>", self.on_scroll)      # Linux scrolling up
+        self.canvas.bind_all("<Button-5>", self.on_scroll)      # Linux scrolling down
         self.cardlab_frame.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
+
         self.canvas.create_window((0,0), window=self.cardlab_frame, anchor="nw")
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
 
@@ -43,17 +54,30 @@ class CardDisplay(tk.Frame):
         self.scrollbar.pack(side="right", fill="y")
 
         self.bind("<<CardsChanged>>", self.on_cards_changed)
+        self.canvas.bind("<Configure>", self.on_scroll)
         self.set_cards(card_dicts)
 
-    def on_cards_changed(self, event):
-        missing_link = "https://cards.scryfall.io/normal/front/a/3/a3da3387-454c-4c09-b78f-6fcc36c426ce.jpg"
-        urls = [card.get("image_uris").get("normal") if card.get("image_uris") and card.get("image_uris").get("normal") else missing_link for card in self.card_dicts]
-        for i, _ in enumerate(urls):
+    def gen_card_labels(self):
+         # Generate up to image_limit labels
+        for i in range(self.image_count, min(self.image_limit, self.num_cards)):
             label = SingleCard(self.cardlab_frame)
             label.grid(row = i // self.cards_per_row, column= i % self.cards_per_row, padx=2, pady=2)
             self.cardlabs.append(label)
 
-        threading.Thread(target=getImageFromURLs, args=(urls, self)).start()
+    def on_cards_changed(self, event):
+        # Retrieve the links
+        missing_link = "https://cards.scryfall.io/normal/front/a/3/a3da3387-454c-4c09-b78f-6fcc36c426ce.jpg"
+        urls = [card.get("image_uris").get("normal") if card.get("image_uris") and card.get("image_uris").get("normal") else missing_link for card in self.card_dicts]
+
+        # Generate card labels
+        self.num_cards = len(urls)
+        self.gen_card_labels()
+
+        # Set up the thread
+        self.pause_event.set()  # Ensure the thread is active
+        self.load_thread = Thread(target=self.getImageFromURLs, args=(urls,))
+        self.load_thread.daemon = True  # Allow thread to close with the app
+        self.load_thread.start()
     
     def set_cards(self, cards:list):
         if type(cards) != list:
@@ -69,6 +93,54 @@ class CardDisplay(tk.Frame):
             lab.destroy()
         self.cardlabs = []
 
+    # Fetches a list of card images from URLs
+    def getImageFromURLs(self, urls: list):
+        def worker():
+            index = 0
+            while index < len(urls):
+                # Wait if the thread is paused
+                self.pause_event.wait()
+
+                if index >= self.image_limit:
+                    print("Reached image limit, pausing thread")
+                    self.pause_event.clear()
+                    self.pause_event.wait()  # Pause here until the event is set again
+
+                try:
+                    url = urls[index]
+                    print(f"Loading image {index + 1}/{len(urls)} from {url}")
+
+                    req = Request(url, headers={"User-Agent": PROGRAM_VERSION})
+                    image = ImageTk.PhotoImage(file=urlopen(req))
+
+                    # Assign image to the corresponding label
+                    self.cardlabs[index].img = image
+                    self.cardlabs[index].event_generate("<<ImageLoaded>>")
+
+                    self.image_count += 1
+                    index += 1
+
+                except Exception as e:
+                    print(f"Error loading image at index {index}: {e}")
+                    index += 1  # Skip to the next image on error
+
+        # Start the worker thread
+        self.load_thread = Thread(target=worker, daemon=True)
+        self.load_thread.start()
+
+    def on_scroll(self, event=None):
+        # Calculate scrollbar position
+        pos = self.canvas.yview()[1]  # Position is a tuple (start, end) -> end
+        print("pos:", pos)
+
+        # Unpause thread at 90% scroll and limit < number of cards in display's list
+        if pos > 0.9 and self.image_limit < self.num_cards:
+            print("setting unpause")
+            self.image_limit += self.cards_per_row * 4  # Increase the limit
+            print("image limit:", self.image_limit)
+            self.gen_card_labels()
+            self.pause_event.set()  # Unpause the thread if paused
+
 
 class SingleCard(tk.Frame):
     def __init__(self, parent:tk.Frame):
@@ -80,31 +152,7 @@ class SingleCard(tk.Frame):
         self.bind("<<ImageLoaded>>", self.on_image_loaded)
     
     def on_image_loaded(self, event):
-        print("SingleCard: on_image_loaded")
-        print(self.img)
         self.lab.config(image=self.img, text="", width=self.img.width(), height=self.img.height())
-
-
-# Fetches a list of card images from URLs
-def getImageFromURLs(urls:list, controller:CardDisplay):
-    def fetch_next_image(index:int):
-        if index < len(urls):
-            try:
-                url = urls[index]
-                req = Request(url, headers = { "User-Agent": PROGRAM_VERSION })
-                image = ImageTk.PhotoImage(file=urlopen(req))
-                controller.cardlabs[index].img = image
-                controller.cardlabs[index].event_generate("<<ImageLoaded>>")
-
-            except Exception as e:
-                print(f"Error loading images: {e}")
-
-            # Schedule next image download after 50ms delay - per Scryfall's request
-            controller.after(50, fetch_next_image, index + 1)
-
-    # Start image fetching
-    if len(urls):
-        fetch_next_image(0)
 
 
 class SearchWidget(tk.Frame):
@@ -311,7 +359,7 @@ if __name__ == "__main__":
 
     import json
     with open("refined-cards.json", "r") as fd:
-        cards = json.loads(fd.read())[:15]
+        cards = json.loads(fd.read())[:180]
         print(len(cards), type(cards))
 
     app = App()
