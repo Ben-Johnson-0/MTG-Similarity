@@ -19,11 +19,6 @@ class App(tk.Tk):
         display.pack(fill="both", expand=True)
 
 
-class SimilarityMenu(tk.Frame):
-    def __init__(self):
-        pass
-
-
 class CardDisplay(tk.Frame):
     def __init__(self, parent:tk.Tk, card_dicts:list, cards_per_row:int):
         super().__init__(parent)
@@ -187,6 +182,8 @@ class SearchWidget(tk.Frame):
         self.add_search_parameter_widget("Colors", "colors", color_text)
         colorid_text = tk.StringVar()
         self.add_search_parameter_widget("Color Identity", "color_identity", colorid_text)
+        similarityid_text = tk.StringVar()
+        self.add_search_parameter_widget("Similarity ID", "similarity_id", similarityid_text)
         cmc_text = tk.StringVar()
         self.add_search_parameter_widget("Mana Value / Converted Mana Cost", "cmc", cmc_text, hasCompareOpts=True)
 
@@ -224,6 +221,10 @@ class SearchWidget(tk.Frame):
                     # Colorless search must use an empty list
                     else:
                         result = (search_colors == card[search_param])
+
+                # Similarity ID
+                elif "similarity_id" in search_param:
+                    result = int(card[search_param]) == int(pattern["value"])
 
                 # Text-based fields
                 else:
