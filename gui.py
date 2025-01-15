@@ -8,7 +8,7 @@ import operator
 PROGRAM_VERSION = "MTGCardSimilarity/0.1"
 
 class App(tk.Tk):
-    def __init__(self):
+    def __init__(self, cards:list):
         super().__init__()
 
         self.title("MTG Card Similarity")
@@ -361,19 +361,9 @@ def parse_colors(color_pattern : str) -> list:
     return list(search_colors)
 
 if __name__ == "__main__":
-    # Quick implementation of card similarity
-    # from cardsim import get_card_list, card_similarity, gen_custom_data, save_dict
-    # # Calculate card similarity
-    # all_cards = get_card_list()                             # Get card list
-    # card_names = [entry["name"] for entry in all_cards]     # Get all the card names for later
-    # components = card_similarity(all_cards, num_minhashes=144, blocks=24, rows_per_block=6, votes=6, max_rows=500)
-    # cards = gen_custom_data(all_cards, components)
-    # save_dict(cards, "refined-cards.json")
+    from cardsim import get_custom_cards
+    print("Getting custom card data...")
+    cards = get_custom_cards()
 
-    import json
-    with open("refined-cards.json", "r") as fd:
-        cards = json.loads(fd.read())[:180]
-        print(len(cards), type(cards))
-
-    app = App()
+    app = App(cards)
     app.mainloop()
