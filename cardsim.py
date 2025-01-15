@@ -12,7 +12,7 @@ import sys
 import numpy as np
 from sympy import primerange
 from random import choice, randrange
-from json import dumps
+from json import dumps, loads
 
 # Return a list of card dictionaries
 def get_card_list(raw_json_file: str | None = None) -> list:
@@ -214,6 +214,28 @@ def save_dict(d:dict, fname:str):
     with open(fname, "w") as fd:
         json_obj = dumps(d, indent=2)
         fd.write(json_obj)
+
+# Returns the custom card data, either by generating it first or reusing a file from that day
+def get_custom_cards() -> list:
+    import datetime
+    current_date = datetime.datetime.now().date()
+    output_file = f"refined-cards-{current_date}.json"
+
+    # Create the data file if it doesn't exist for the day
+    if not os.path.isfile(output_file):
+        print("Processing card data for a new list...")
+        all_cards = get_card_list()
+        components = card_similarity(all_cards, num_minhashes=144, blocks=24, rows_per_block=6, votes=6, max_rows=500)
+        cards = gen_custom_data(all_cards, components)
+        save_dict(cards, output_file)
+    # Reuse a file generated that day
+    else:
+        print("Loading pre-made card data file")
+        with open(output_file, "r") as fd:
+            cards = loads(fd.read())
+            print(len(cards), type(cards))
+
+    return cards
 
 
 if __name__ == "__main__":
