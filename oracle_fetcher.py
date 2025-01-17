@@ -3,6 +3,7 @@ import sys
 import json
 import glob
 import datetime
+import os
 
 PROGRAM_VERSION = "MTGCardSimilarity/0.1"
 CARD_DATASET = "https://api.scryfall.com/bulk-data/oracle-cards"
@@ -11,10 +12,14 @@ CARD_DATASET = "https://api.scryfall.com/bulk-data/oracle-cards"
 # Retrieve the oracle json file of all cards and save it locally, returns the new file's name
 def get_oracle_json() -> str:
 
-    # Return latest file if it's from today's date
     latest_file, latest_date = get_latest_local_oracle_json()
-    if latest_date.date() == datetime.datetime.now().date():
-        return latest_file
+    if latest_file:
+        deleted_files = delete_old_jsons(dir='card_data', pathname='oracle-cards-*.json', excluded_jsons=[latest_file])
+        print(f"Deleted the following out-of-date files: {deleted_files}")
+
+        # Return latest file if it's from today's date
+        if latest_date.date() == datetime.datetime.now().date():
+            return latest_file
 
     headers = { "User-Agent": PROGRAM_VERSION }
     initial_req = urllib.request.Request(CARD_DATASET, headers=headers)
@@ -82,6 +87,38 @@ def get_latest_local_oracle_json() -> tuple[str, datetime.datetime]:
             latest_file = fname
 
     return latest_file, latest_date
+
+# Delete all files that match a pattern
+def delete_old_jsons(dir:str = None, pathname:str = "oracle-cards-*.json", excluded_jsons:list = []) -> list:
+    """
+    Deletes JSON files in a directory that match the pathname but are not in the excluded_jsons list.
+
+    Parameters:
+    - dir (str): Directory to look for files (default: None)
+    - pathname (str): Pattern of file names to search for (default: 'oracle-cards-*.json')
+    - excluded_jsons (list): List of file names to exclude from deletion.
+
+    Returns:
+    - list: List of deleted file paths.
+    """
+
+    # Normalize to full paths when there's a directory name present
+    if dir:
+        excluded_jsons = list(map(lambda x: os.path.join(dir, x), excluded_jsons))
+        pathname = os.path.join(dir, pathname)
+    
+    json_list = glob.glob(pathname)
+    files_to_delete = [file for file in json_list if file not in excluded_jsons]
+
+    deleted = []
+    for file in files_to_delete:
+        try:
+            os.remove(file)
+            deleted.append(file)
+        except Exception as e:
+            print(f"Failed to delete {file}: {e}")
+
+    return deleted
 
 
 if __name__ == "__main__":
