@@ -89,7 +89,7 @@ def get_latest_local_oracle_json() -> tuple[str, datetime.datetime]:
     return latest_file, latest_date
 
 # Delete all files that match a pattern
-def delete_old_jsons(dir:str = None, pathname:str = "oracle-cards-*.json", excluded_jsons:list = []) -> list:
+def delete_old_jsons(dir:str | None = None, pathname:str = "oracle-cards-*.json", excluded_jsons:list = []) -> list:
     """
     Deletes JSON files in a directory that match the pathname but are not in the excluded_jsons list.
 
