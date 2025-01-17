@@ -219,7 +219,7 @@ def save_dict(d:dict, fname:str):
 def get_custom_cards() -> list:
     import datetime
     current_date = datetime.datetime.now().date()
-    output_file = f"refined-cards-{current_date}.json"
+    output_file = os.path.join('card_data', f"refined-cards-{current_date}.json")
 
     # Create the data file if it doesn't exist for the day
     if not os.path.isfile(output_file):
@@ -300,7 +300,7 @@ if __name__ == "__main__":
     print(f"Average group size: {n/len(components):.2f}")
     print(f"Median group size: {median(all_lens)}")
 
-    new_file = "card-similarity.json"
+    new_file = "card_data/card-similarity.json"
     print(f"\nSaving to '{new_file}'...")
     save_dict(components, new_file)
     print("Saved.")

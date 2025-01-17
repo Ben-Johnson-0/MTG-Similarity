@@ -39,7 +39,7 @@ def get_oracle_json() -> str:
             json_object = json.loads(data)
 
             # Save cards to local json file, file name format: 'oracle-cards-2024-12-26T22_04_29.json'
-            new_file_name = f"oracle-cards-{update_time.replace(":","_")[:19]}.json"
+            new_file_name = f"card_data/oracle-cards-{update_time.replace(":","_")[:19]}.json"
             with open(new_file_name, "w", encoding="utf-8") as json_file:
                 json.dump(json_object, json_file)
 
@@ -59,7 +59,7 @@ def get_oracle_json() -> str:
 
 # Search for files that match the oracle cards name pattern, return the latest file name and datetime object
 def get_latest_local_oracle_json() -> tuple[str, datetime.datetime]:
-    oracle_json_files:list = glob.glob("oracle-cards-*-*-*T*_*_*.json")
+    oracle_json_files:list = glob.glob("card_data/oracle-cards-*-*-*T*_*_*.json")
 
     current_date = datetime.datetime.now()
     latest_date:datetime.datetime = None
