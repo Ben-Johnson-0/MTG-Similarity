@@ -5,7 +5,7 @@
 #                   oracle-cards-file num-minhashes blocks rows-per-block votes
 
 import filesim_helper as fsh
-from oracle_fetcher import get_oracle_json
+from oracle_fetcher import get_oracle_json, delete_old_jsons
 
 import os
 import sys
@@ -228,6 +228,7 @@ def get_custom_cards() -> list:
         components = card_similarity(all_cards, num_minhashes=144, blocks=24, rows_per_block=6, votes=6, max_rows=500)
         cards = gen_custom_data(all_cards, components)
         save_dict(cards, output_file)
+        delete_old_jsons(dir='card_data', pathname='refined-cards-*.json', excluded_jsons=[f"refined-cards-{current_date}.json"])
     # Reuse a file generated that day
     else:
         print("Loading pre-made card data file")
