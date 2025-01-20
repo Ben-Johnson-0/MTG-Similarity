@@ -363,7 +363,7 @@ def parse_colors(color_pattern : str) -> list:
 if __name__ == "__main__":
     from cardsim import get_custom_cards
     print("Getting custom card data...")
-    cards = get_custom_cards()
+    cards = get_custom_cards(dir='card_data')
 
     app = App(cards)
     app.mainloop()

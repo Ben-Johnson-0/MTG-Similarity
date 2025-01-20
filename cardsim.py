@@ -15,9 +15,9 @@ from random import choice, randrange
 from json import dumps, loads
 
 # Return a list of card dictionaries
-def get_card_list(raw_json_file: str | None = None) -> list:
+def get_card_list(raw_json_file: str | None = None, dir: str | None = 'card_data') -> list:
     if raw_json_file == None:
-        raw_json_file = get_oracle_json()
+        raw_json_file = get_oracle_json(dir)
     all_cards = fsh.clean_cards(raw_json_file)
     return all_cards
 
@@ -216,19 +216,19 @@ def save_dict(d:dict, fname:str):
         fd.write(json_obj)
 
 # Returns the custom card data, either by generating it first or reusing a file from that day
-def get_custom_cards() -> list:
+def get_custom_cards(dir:str | None = 'card_data') -> list:
     import datetime
     current_date = datetime.datetime.now().date()
-    output_file = os.path.join('card_data', f"refined-cards-{current_date}.json")
+    output_file = os.path.join(dir, f"refined-cards-{current_date}.json")
 
     # Create the data file if it doesn't exist for the day
     if not os.path.isfile(output_file):
         print("Processing card data for a new list...")
-        all_cards = get_card_list()
+        all_cards = get_card_list(dir=dir)
         components = card_similarity(all_cards, num_minhashes=144, blocks=24, rows_per_block=6, votes=6, max_rows=500)
         cards = gen_custom_data(all_cards, components)
         save_dict(cards, output_file)
-        delete_old_jsons(dir='card_data', pathname='refined-cards-*.json', excluded_jsons=[f"refined-cards-{current_date}.json"])
+        delete_old_jsons(dir=dir, pathname='refined-cards-*.json', excluded_jsons=[f"refined-cards-{current_date}.json"])
     # Reuse a file generated that day
     else:
         print("Loading pre-made card data file")
