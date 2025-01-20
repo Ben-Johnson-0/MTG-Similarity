@@ -8,19 +8,22 @@ import os
 PROGRAM_VERSION = "MTGCardSimilarity/0.1"
 CARD_DATASET = "https://api.scryfall.com/bulk-data/oracle-cards"
 
-def get_oracle_json() -> str:
+def get_oracle_json(dir:str | None = 'card_data') -> str:
     """
     Retrieves the oracle-cards JSON file for the day from the Scryfall API. Will automatically use a locally stored
     JSON instead if one already exists for the current date. Deletes the out-of-date oracle-cards JSONs from the 
     card_data/ directory.
 
+    Parameters:
+    - dir (str | None): Directory to store oracle-cards JSON files (default: 'card_data')
+
     Returns:
     - str: Local JSON file
     """
 
-    latest_file, latest_date = get_latest_local_oracle_json()
+    latest_file, latest_date = get_latest_local_oracle_json(dir=dir)
     if latest_file:
-        deleted_files = delete_old_jsons(dir='card_data', pathname='oracle-cards-*.json', excluded_jsons=[latest_file])
+        deleted_files = delete_old_jsons(dir=dir, pathname='oracle-cards-*.json', excluded_jsons=[latest_file])
         print(f"Deleted the following out-of-date files: {deleted_files}")
 
         # Return latest file if it's from today's date
@@ -50,7 +53,9 @@ def get_oracle_json() -> str:
             json_object = json.loads(data)
 
             # Save cards to local json file, file name format: 'oracle-cards-2024-12-26T22_04_29.json'
-            new_file_name = f"card_data/oracle-cards-{update_time.replace(":","_")[:19]}.json"
+            new_file_name = f"oracle-cards-{update_time.replace(":","_")[:19]}.json"
+            if dir:
+                new_file_name = os.path.join(dir, new_file_name)
             with open(new_file_name, "w", encoding="utf-8") as json_file:
                 json.dump(json_object, json_file)
 
@@ -67,22 +72,29 @@ def get_oracle_json() -> str:
     
     return new_file_name
 
-def get_latest_local_oracle_json() -> tuple[str, datetime.datetime]:
+def get_latest_local_oracle_json(dir:str | None = None) -> tuple[str, datetime.datetime]:
     """
-    Retrieves the most up-to-date oracle-cards JSON file name and it's datetime data.
+    Retrieves the most up-to-date oracle-cards JSON file name and it's datetime data in a given directory.
+
+    Parameters:
+    - dir (str | None): Directory to look for files (default: None)
 
     Returns:
     - tuple: Latest File Name (str), Latest time (datetime.datetime)
     """
 
-    oracle_json_files:list = glob.glob("card_data/oracle-cards-*-*-*T*_*_*.json")
+    pathname:str = "oracle-cards-*-*-*T*_*_*.json"
+    if dir:
+        pathname = os.path.join(dir, pathname)
+    
+    oracle_json_files:list = glob.glob(pathname)
 
     current_date = datetime.datetime.now()
     latest_date:datetime.datetime = None
     latest_file:str = None
     for fname in oracle_json_files:
         # Parse date data
-        date_string:str = fname[13:-5]
+        date_string:str = fname[-24:-5]
         date_string = date_string.replace('_', ':')
         file_date = datetime.datetime.fromisoformat(date_string)
 
@@ -104,7 +116,7 @@ def delete_old_jsons(dir:str | None = None, pathname:str = "oracle-cards-*.json"
     Deletes JSON files in a directory that match the pathname but are not in the excluded_jsons list.
 
     Parameters:
-    - dir (str): Directory to look for files (default: None)
+    - dir (str | None): Directory to look for files (default: None)
     - pathname (str): Pattern of file names to search for (default: 'oracle-cards-*.json')
     - excluded_jsons (list): List of file names to exclude from deletion.
 
