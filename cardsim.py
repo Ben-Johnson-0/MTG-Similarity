@@ -14,16 +14,42 @@ from sympy import primerange
 from random import choice, randrange
 from json import dumps, loads
 
-# Return a list of card dictionaries
+
 def get_card_list(raw_json_file: str | None = None, dir: str | None = 'card_data') -> list:
+    """
+    Retrieve card JSON and preprocess the oracle text of all the cards. If raw_json_file is None,
+    the card data will be retrieved from the Scryfall API and preprocessed instead.
+
+    Parameters:
+    - raw_json_file (str|None): File path to a JSON file of card data (default: None)
+    - dir (str|None): Directory to store oracle-cards JSON files (default: 'card_data')
+
+    Returns:
+    - list: List of preprocessed card dictionaries
+    """
+
     if raw_json_file == None:
         raw_json_file = get_oracle_json(dir)
-    all_cards = fsh.clean_cards(raw_json_file)
-    return all_cards
+    
+    return fsh.clean_cards(raw_json_file)
 
-# Given a list of cards, return groups of cards that are strongly connected for similarity
 def card_similarity(cards:list, num_minhashes:int, blocks:int, rows_per_block:int, votes:int, max_rows:int) -> dict:
-    imp_shingles = imp_shins(cards, minVal=4)               # Find all the important shingles that appear atleast minVal times
+    """
+    Calculate card similarity for a given list of card dictionaries using the given criteria for determining similar groups of cards.
+
+    Parameters:
+    - cards (list): List of card dictionaries
+    - num_minhashes (int): The number of minhash steps to perform
+    - blocks (int): Number of blocks
+    - rows_per_block (int): Number of rows per block
+    - votes (int): Minimum number of votes needed to create an edge between cards
+    - max_rows (int): Maximum number of rows to consider before stopping
+
+    Returns:
+    - dict: Dictionary of all the strongly connected components of the graph. {key= Similarity ID, value= [List of Card IDs]}
+    """
+
+    imp_shingles = imp_shins(cards, minVal=4)                   # Find all the important shingles that appear atleast minVal times
     mat = generate_shingle_bin_matrix(imp_shingles, cards)      # Apply the characteristic function to all files to make a matrix - each card will have a binary representation for each of the important shingles
     mat = minhash(mat, num_minhashes, max_rows)                 # Minhash the matrix
     sim_mat = sim_vote(mat, votes, blocks, rows_per_block)      # Obtain the adjacency matrix of similar documents
@@ -32,8 +58,18 @@ def card_similarity(cards:list, num_minhashes:int, blocks:int, rows_per_block:in
     components = strongly_connected(sim_mat)
     return components
 
-# Create shingle binary array
 def generate_shingle_bin(imp_shingles:dict, card:dict) -> np.array:
+    """
+    Characteristic function to determine the card's binary value based on the important shingles.
+
+    Parameters:
+    - imp_shingles (dict): Dictionary of important shingles and their indices {key=shingle, value=index}
+    - card (dict): Single card dictionary
+
+    Returns:
+    - np.array: Array of 1s and 0s of length n, where n is the length of important shingles
+    """
+
     n = len(imp_shingles)
     
     # Error check - empty important shingles dict
@@ -43,7 +79,7 @@ def generate_shingle_bin(imp_shingles:dict, card:dict) -> np.array:
     # Error check - 
     shtype = type(list(imp_shingles.keys())[0])
     if(shtype != tuple):
-        print(f"Error: Shingles dictionary keys in type '{shtype}' when they should be of type 'tuple'.", file=sys.stderr)
+        print(f"Type Error: Shingles dictionary keys in type '{shtype}' when they should be of type 'tuple'.", file=sys.stderr)
         sys.exit()
 
     # Open shingles of given file
@@ -60,8 +96,18 @@ def generate_shingle_bin(imp_shingles:dict, card:dict) -> np.array:
 
     return shin_bin
 
-# Build the shingle binary matrix from important shingles and the card list
 def generate_shingle_bin_matrix(imp_shingles:dict, card_list:list) -> np.array:
+    """
+    Characteristic function to determine all cards' binary values based on the important shingles.
+
+    Parameters:
+    - imp_shingles (dict): Dictionary of important shingles and their indices {key=shingle, value=index}
+    - card_list (list): List of card dictionaries.
+
+    Returns:
+    - np.array: Matrix of 1s and 0s of size n by m, where n is the length of important shingles and m is length of card_list
+    """
+
     # Build base matrix
     n = len(imp_shingles)
     mat = np.zeros((n,len(card_list)), dtype=np.uint8)
@@ -72,12 +118,23 @@ def generate_shingle_bin_matrix(imp_shingles:dict, card_list:list) -> np.array:
 
     return mat
 
-# lambda function generator used for generating random hashing functions for minhash
-def randfun(a,b,n):
+def randfun(a:int,b:int,n:int):
+    """Function to create hashing functions for minhash"""
     return lambda x: (a*x+b) % n
 
-# Move stuff into this function when more settled
 def minhash(mat:np.array, num_minhashes:int, max_rows:int) -> np.array:
+    """
+    Minhashing function
+
+    Parameters:
+    - mat (np.array): Matrix of all files' characteristic values
+    - num_minhashes (int): Number of times to run minhash
+    - max_rows (int): Maximum number of rows to consider before stopping
+
+    Returns:
+    - np.array: The resulting matrix after running minhash num_minhashes number of times
+    """
+
     n_shingles = mat.shape[0]   # number of shingles
     n_files = mat.shape[1]      # number of files
 
@@ -172,8 +229,19 @@ def strongly_connected(adjmat:np.array) -> dict:
     return comps
 
 
-# Create a dictionary of important shingles. Keep only the shingles that appear at least minVal times
 def imp_shins(card_list:list, minVal:int = 4) -> dict:
+    """
+    Create the important shingles dictionary based off the frequency of each shingle. Keeps only the shingles 
+    that appear at least minVal number of times.
+
+    Parameters:
+    - card_list (list): List of card dictionaries
+    - minVal (int): The minimum number of appearances a shingle must have to be deemed 'important'.
+
+    Returns:
+    - dict: Important shingles dictionary
+    """
+
     shin_freq = dict()      # Shingle Frequency
     # Loop through the files retrieving all of our shingles
     for card in card_list:
@@ -191,8 +259,18 @@ def imp_shins(card_list:list, minVal:int = 4) -> dict:
     print(len(ordered_shin), 'shingles')
     return ordered_shin
 
-# Create a list of card dictionaries with custom keys and a more limited set of keys
 def gen_custom_data(cards:list, components:dict) -> list:
+    """
+    Create a new list of card dictionaries only keeping certain keys and adding custom Card ID and Similarity ID.
+
+    Parameters:
+    - cards (list): List of card dictionaries
+    - components (dict): Dictionary of similar cards. {key= Similarity ID, value= List of similar cards}
+
+    Returns:
+    - list: List of custom card dictionaries
+    """
+
     new_cards = []
 
     useful_keys = ["name","released_at","uri","scryfall_uri","image_uris","mana_cost","cmc","type_line","oracle_text","colors","color_identity","set_name","collector_number","rarity","flavor_text","artist",]
