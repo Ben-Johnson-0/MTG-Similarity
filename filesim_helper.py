@@ -35,14 +35,31 @@ def clean_cards(fname:str) -> list:
         
         # Combine multi-faced cards into one oracle text
         if x.get('card_faces'):
+            colors = set()
             for face in x['card_faces']:
+                # Check if colors is missing, if so update colors if the 'colors' list exists for the card face
+                if x.get('colors') == None and face.get('colors') != None:
+                    colors.update(face.get('colors'))
+                
                 # Remove reminder text
                 face["oracle_text"] = sub(r"\(.*\)", '', face["oracle_text"])
                 # Escape special characters from the name
                 name = sub(r"[\-\.\/\[\]\\\*\+\?\)\{\}\|]", "\\\1", face['name'])
                 # Replace instances of own name with ~
                 face["oracle_text"] = sub(rf"{name}", '~', face["oracle_text"])
+            
             x['oracle_text'] = '\n//\n'.join([face["oracle_text"] for face in x['card_faces']])
+
+            # Some cards are multi-faced and missing an overall color value, so it needs to be set
+            if x.get('colors') == None:
+                x['colors'] = list(colors)
+
+            # Some multi-faced cards have multiple faces, i.e. transform and modal dual-faced cards
+            if x.get('image_uris') == None:
+                x['image_uris'] = [face['image_uris'] for face in x['card_faces']]
+                x['multifaced'] = True
+            else:
+                x['multifaced'] = False
         
         # Clean normal card's text
         elif x.get('oracle_text'):

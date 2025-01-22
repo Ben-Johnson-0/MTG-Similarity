@@ -255,7 +255,7 @@ def imp_shins(card_list:list, minVal:int = 4) -> dict:
         if(shin_freq[k] >= minVal):
             fsh.add_to_dict(k, ordered_shin, i)
             i += 1
-
+ 
     print(len(ordered_shin), 'shingles')
     return ordered_shin
 
@@ -273,7 +273,7 @@ def gen_custom_data(cards:list, components:dict) -> list:
 
     new_cards = []
 
-    useful_keys = ["name","released_at","uri","scryfall_uri","image_uris","mana_cost","cmc","type_line","oracle_text","colors","color_identity","set_name","collector_number","rarity","flavor_text","artist",]
+    useful_keys = ["name","released_at","uri","scryfall_uri","image_uris","mana_cost","cmc","type_line","oracle_text","colors","color_identity","set_name","collector_number","rarity","flavor_text","artist","multifaced",]
     all_lens = [0] * len(components)
     for comp_id in components.keys():
         comp_len = len(components[comp_id])
