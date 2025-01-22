@@ -90,7 +90,19 @@ class CardDisplay(tk.Frame):
 
         # Retrieve the links
         missing_link = "https://cards.scryfall.io/normal/front/a/3/a3da3387-454c-4c09-b78f-6fcc36c426ce.jpg"
-        urls = [card.get("image_uris").get("normal") if card.get("image_uris") and card.get("image_uris").get("normal") else missing_link for card in self.cards]
+        urls = []
+        for card in self.cards:
+            uris = card.get("image_uris")
+            url = None
+
+            # Just use front face on double sided cards
+            if card.get("multifaced") and uris:
+                url = uris[0].get("normal")
+            # Single faced cards
+            elif uris:
+                url = uris.get("normal")
+
+            urls.append(url if url != None else missing_link)
 
         print("setting up thread")
         # Set up the thread
