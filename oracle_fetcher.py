@@ -23,7 +23,7 @@ def get_oracle_json(dir:str | None = 'card_data') -> str:
 
     latest_file, latest_date = get_latest_local_oracle_json(dir=dir)
     if latest_file:
-        deleted_files = delete_old_jsons(dir=dir, pathname='oracle-cards-*.json', excluded_jsons=[latest_file])
+        deleted_files = delete_old_jsons(dir=dir, pathname='oracle-cards-*.json', excluded_jsons=[os.path.basename(latest_file)])
         print(f"Deleted the following out-of-date files: {deleted_files}")
 
         # Return latest file if it's from today's date
@@ -80,7 +80,7 @@ def get_latest_local_oracle_json(dir:str | None = None) -> tuple[str, datetime.d
     - dir (str | None): Directory to look for files (default: None)
 
     Returns:
-    - tuple: Latest File Name (str), Latest time (datetime.datetime)
+    - tuple: Latest file name (str), Latest time (datetime.datetime)
     """
 
     pathname:str = "oracle-cards-*-*-*T*_*_*.json"
@@ -118,7 +118,7 @@ def delete_old_jsons(dir:str | None = None, pathname:str = "oracle-cards-*.json"
     Parameters:
     - dir (str | None): Directory to look for files (default: None)
     - pathname (str): Pattern of file names to search for (default: 'oracle-cards-*.json')
-    - excluded_jsons (list): List of file names to exclude from deletion.
+    - excluded_jsons (list): List of file names to exclude from deletion. Must be the basename and not a full path.
 
     Returns:
     - list: List of deleted file paths.
