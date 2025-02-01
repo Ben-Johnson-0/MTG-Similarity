@@ -62,8 +62,8 @@ class CardDisplay(tk.Frame):
         # Generate up to image_limit labels
         print(f" image_count = {self.image_count}\n image limit = {self.image_limit}\n len(cards) = {len(self.cards)}")
         for i in range(self.image_count, min(self.image_limit, len(self.cards))):
-            label = SingleCard(self.cardlab_frame)
-            label.grid(row = i // self.cards_per_row, column= i % self.cards_per_row, padx=2, pady=2)
+            label = SingleCard(self.cardlab_frame, self.cards[i])
+            label.grid(row = i // self.cards_per_row, column= i % self.cards_per_row)
             self.cardlabs.append(label)
 
     def set_cards(self, cards:list):
@@ -162,16 +162,35 @@ class CardDisplay(tk.Frame):
 
 
 class SingleCard(tk.Frame):
-    def __init__(self, parent:tk.Frame):
+    def __init__(self, parent:tk.Frame, card:dict):
         super().__init__(parent)
 
-        self.lab = tk.Label(self, text="Loading...", width=66, height=42)
+        self.card:dict = card
+        self.lab = tk.Label(self, text="Loading...", width=66, height=42, border=4, bg=hash_to_color(card.get('similarity_id')))
         self.lab.pack()
         self.img = None
         self.bind("<<ImageLoaded>>", self.on_image_loaded)
     
     def on_image_loaded(self, event):
         self.lab.config(image=self.img, text="", width=self.img.width(), height=self.img.height())
+
+
+def hash_to_color(num:int) -> str:
+    """
+    Returns a color string based on the hashing of a given number.
+
+    Parameters:
+    - num (int): The ID or number that is used for hashing a color
+
+    Returns:
+    - str: Color string (i.e. #fff000)
+    """
+    def color_hash(x):
+        return (5437*x+7919) % (2**24)
+
+    color:str = f"#{color_hash(num):06x}"
+
+    return color
 
 
 class SearchWidget(tk.Frame):
